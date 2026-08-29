@@ -198,14 +198,16 @@ body{
 .content,
 .guide-content,
 .modal-scroll-list,
-.export-textarea{
+.export-textarea,
+.modal{
   scrollbar-width: none;      /* Firefox */
   -ms-overflow-style: none;   /* 舊版 Edge / IE */
 }
 .content::-webkit-scrollbar,
 .guide-content::-webkit-scrollbar,
 .modal-scroll-list::-webkit-scrollbar,
-.export-textarea::-webkit-scrollbar{
+.export-textarea::-webkit-scrollbar,
+.modal::-webkit-scrollbar{
   display: none;              /* Safari / Chrome 等 WebKit / Blink 核心 */
 }
 
@@ -720,6 +722,13 @@ body{
   border-radius: 24px 24px 0 0;
   padding: 22px 20px calc(20px + env(safe-area-inset-bottom));
   animation: slideUp .2s ease;
+  /* 有些彈窗（尤其「管理分類」，選項越加越多）內容可能比螢幕還高，
+     手機上打字時鍵盤還會再吃掉一大塊高度。之前沒有限制高度、也不能
+     捲動，內容太長時上半部會直接被推出畫面外，而且完全滑不上去、
+     碰不到——用 max-height 頂住、超過的部分自己在 modal 內部捲動，
+     不會再整個消失在畫面外。 */
+  max-height: 85dvh;
+  overflow-y: auto;
 }
 @keyframes slideUp{
   from{ transform: translateY(16px); opacity: 0; }
