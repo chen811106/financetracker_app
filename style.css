@@ -1,0 +1,790 @@
+/* =========================================================
+   拾光記帳 · Healing Ledger
+   莫蘭迪色系 / 極簡療癒風格
+   ========================================================= */
+
+:root{
+  /* 背景與中性色 */
+  --bg: #EFE9E2;
+  --surface: #FBF8F4;
+  --surface-soft: #F4EFE8;
+  --border: #E2D9CC;
+  --text-primary: #5C544B;
+  --text-secondary: #A69B8D;
+  --text-faint: #C4BAAC;
+
+  /* 莫蘭迪主色（分類色） */
+  --c-food: #D3A6A1;      /* 吃飯 - 霧玫瑰 */
+  --c-fun: #A6B7C0;       /* 娛樂 - 霧藍 */
+  --c-daily: #B3C0A4;     /* 生活用品 - 鼠尾草綠 */
+  --c-fuel: #C9B7A0;      /* 油錢/停車費 - 沙棕 */
+  --c-transport: #7E97A3; /* 交通 - 霧藍灰 */
+  --c-member: #ABA3B0;    /* 會員費用 - 灰紫 */
+  --c-clothes: #D6C29C;   /* 服飾 - 燕麥金 */
+  --c-luxury: #B98C7D;    /* 奢侈品 - 赤陶 */
+  --c-invest: #A2798A;    /* 投資（買賣股票）- 酒紅灰，收支通用同一色 */
+  --c-adjust: #A8A296;    /* 調整（收支通用同一色）- 中性暖灰 */
+
+  /* 收入分類色 */
+  --c-salary: #8FA888;    /* 薪資收入 - 橄欖綠 */
+  --c-allowance: #A3B08A; /* 生活費 - 抹茶綠 */
+  --c-dividend: #B8AA6B;  /* 股利收入 - 燕麥金綠 */
+  --c-other-income: #9CADA0; /* 其他收入 - 灰綠 */
+
+  /* 功能色 */
+  --accent: #B98C7D;
+  --accent-soft: #EBDDD5;
+  --danger: #C58A83;
+  --warn: #D3B26A;
+  --safe: #93A98B;
+
+  --radius-lg: 22px;
+  --radius-md: 16px;
+  --radius-sm: 10px;
+  --shadow-soft: 0 8px 24px rgba(92, 84, 75, 0.08);
+}
+
+*{ box-sizing: border-box; }
+
+/* html 也要塗上跟 App 一樣的底色：手機瀏覽器在上下滑到底、出現回彈
+   效果時，露出來的其實是 html 元素的背景，不是 body 的，如果沒設定
+   就會看到瀏覽器預設的白色或黑色。overscroll-behavior:none 則是直接
+   關掉那個回彈/露底色的效果，滑到頂/底就直接停住，不會再彈一下。 */
+html{
+  background: var(--bg);
+  overscroll-behavior: none;
+  /* 只允許上下／左右平移，不包含 pinch-zoom 這個手勢，瀏覽器就不會處理
+     雙指縮放。iOS Safari 從 10 版開始其實會忽略 viewport meta 裡的
+     maximum-scale／user-scalable=no，所以縮放要靠這個 touch-action 加上
+     下面 app.js 裡的手勢攔截，兩層一起擋才會真的擋住。 */
+  touch-action: pan-x pan-y;
+}
+
+body{
+  margin: 0;
+  font-family: "PingFang TC","Noto Sans TC","Microsoft JhengHei",-apple-system,BlinkMacSystemFont,sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px 12px;
+  overscroll-behavior: none;
+  touch-action: pan-x pan-y;
+}
+
+/* ---------- 手機外框（桌面預覽用） ---------- */
+.phone{
+  width: 100%;
+  max-width: 420px;
+  min-height: 780px;
+  background: var(--surface);
+  border-radius: 36px;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ---------- 頂部列 ---------- */
+.topbar{
+  padding: 26px 22px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: var(--surface);
+}
+.topbar-eyebrow{
+  margin: 0 0 4px;
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--text-faint);
+}
+.topbar h1{
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.topbar-side{
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+}
+.topbar-date{
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding-top: 4px;
+  white-space: nowrap;
+}
+.sync-badge{
+  font-size: 10px;
+  color: var(--safe);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity .2s ease;
+}
+.sync-badge.on{ opacity: 1; }
+
+/* ---------- 內容區 ----------
+   這裡只負責用 flex:1 撐開剩餘高度。手機版的捲動方式（固定畫面高度，
+   捲動收在 .content 內部）另外寫在下面的手機 media query 裡；桌機版
+   預覽用的外框沒有鎖高度，維持原本整頁捲動即可。 */
+.content{
+  flex: 1;
+  padding: 4px 18px 20px;
+}
+
+.tab-panel{ display: none; animation: fadeIn .25s ease; }
+.tab-panel.active{ display: block; }
+
+@keyframes fadeIn{
+  from{ opacity: 0; transform: translateY(6px); }
+  to{ opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- 卡片 ---------- */
+.card{
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.card h2{
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ---------- 首頁摘要 ---------- */
+.summary-card{
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, var(--accent-soft), var(--surface-soft));
+}
+.summary-item{
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.summary-item span{ font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
+.summary-item strong{ font-size: 16px; color: var(--text-primary); font-weight: 700; white-space: nowrap; }
+.summary-item.income strong{ color: var(--safe); }
+.summary-divider{
+  width: 1px;
+  height: 34px;
+  background: var(--border);
+  margin: 0 10px;
+  flex-shrink: 0;
+}
+
+/* ---------- 表單 ---------- */
+.field-label{
+  display: block;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 12px 0 6px;
+}
+.text-input{
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 11px 13px;
+  /* 16px 是關鍵：iOS Safari 只要輸入框的字級小於 16px，點下去就會自動
+     放大整個畫面（想幫你看清楚打了什麼），點掉鍵盤後那個放大不會自己
+     完全復原，要再點兩下才會縮回正常大小。字級只要 >=16px，Safari
+     就不會觸發這個自動縮放，從根本避免掉，不用事後補救。 */
+  font-size: 16px;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color .15s ease;
+  font-family: inherit;
+}
+.text-input:focus{ border-color: var(--accent); }
+
+.row{ display: flex; gap: 12px; }
+.row .field{ flex: 1; }
+
+/* 匯出記帳紀錄的文字框：字級刻意不動（維持跟其他 .text-input 一樣的
+   16px，避免 iOS 自動放大），只加高度、改成等寬字體方便對齊、允許
+   使用者自己拉高。 */
+.export-textarea{
+  min-height: 220px;
+  resize: vertical;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* ---------- 支出／收入 切換 ---------- */
+.type-toggle{
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 3px;
+  margin-bottom: 6px;
+}
+.type-btn{
+  flex: 1;
+  border: none;
+  background: none;
+  padding: 8px 0;
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background .15s ease, color .15s ease;
+}
+.type-btn.active{ background: var(--accent); color: #fff; }
+.type-btn[data-type="income"].active{ background: var(--safe); }
+
+.category-preview{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.cat-dot{
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  flex-shrink: 0;
+  transition: background .15s ease;
+}
+
+.primary-btn{
+  width: 100%;
+  margin-top: 16px;
+  padding: 13px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #FFFDFB;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity .15s ease, transform .1s ease;
+  font-family: inherit;
+}
+.primary-btn:hover{ opacity: .9; }
+.primary-btn:active{ transform: scale(0.98); }
+
+.hint-text{
+  font-size: 11px;
+  color: var(--text-faint);
+  margin: 8px 2px 0;
+  min-height: 14px;
+}
+
+/* ---------- 清單通用 ---------- */
+.plain-list{ list-style: none; margin: 0; padding: 0; }
+
+.list-item{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+.list-item:last-child{ border-bottom: none; }
+
+.item-dot{
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.item-main{ flex: 1; min-width: 0; }
+.item-title{
+  font-size: 14px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.item-sub{
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+
+.item-amount{
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+.item-amount.income{ color: var(--safe); }
+
+.item-delete, .item-edit{
+  border: none;
+  background: none;
+  color: var(--text-faint);
+  font-size: 15px;
+  cursor: pointer;
+  padding: 4px 2px;
+  line-height: 1;
+}
+.item-delete:hover{ color: var(--danger); }
+.item-edit:hover{ color: var(--accent); }
+
+.empty-hint{
+  text-align: center;
+  color: var(--text-faint);
+  font-size: 12px;
+  padding: 18px 0 4px;
+  display: none;
+}
+
+/* ---------- 圖表 ---------- */
+.section-head{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.section-head h2{ margin: 0; }
+
+.month-nav{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.icon-btn{
+  border: 1px solid var(--border);
+  background: var(--surface);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.icon-btn:hover{ background: var(--accent-soft); }
+
+.donut-wrap{
+  position: relative;
+  width: 180px;
+  height: 180px;
+  margin: 8px auto 18px;
+}
+#donutChart{ width: 100%; height: 100%; transform: rotate(-90deg); }
+.donut-center{
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.donut-center span{ font-size: 18px; font-weight: 700; color: var(--text-primary); }
+.donut-center small{ font-size: 10px; color: var(--text-faint); margin-top: 2px; }
+
+.legend{ list-style: none; margin: 0; padding: 0; }
+.legend li{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+}
+.legend li:last-child{ border-bottom: none; }
+.legend .item-dot{ width: 10px; height: 10px; }
+.legend .legend-name{ flex: 1; color: var(--text-primary); }
+.legend .legend-percent{ color: var(--text-faint); font-size: 11px; width: 38px; text-align: right; }
+.legend .legend-amount{ color: var(--text-primary); font-weight: 600; width: 72px; text-align: right; }
+/* 圖例每一列都能點進去看這個分類這個月的明細 */
+.legend-clickable{ cursor: pointer; }
+.legend-clickable:active{ opacity: .7; }
+.legend-arrow{ color: var(--text-faint); font-size: 15px; margin-left: -2px; }
+
+/* 圖表分類明細彈窗：交易可能很多筆，讓清單自己捲動，不要把整個
+   modal 撐到超出畫面 */
+.modal-scroll-list{ max-height: 46vh; overflow-y: auto; }
+
+/* ---------- 帳戶 ---------- */
+.total-row{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.total-row strong{ color: var(--text-primary); font-size: 16px; }
+
+.section-actions{ display: flex; align-items: center; gap: 8px; }
+
+.add-mini{
+  border: none;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 100px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.add-mini.secondary{ background: var(--surface); color: var(--text-secondary); border: 1px solid var(--border); }
+.add-mini:hover{ opacity: .85; }
+
+/* ---------- 信用卡 ---------- */
+.card-list{ list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+
+.credit-card{
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  background: linear-gradient(135deg, #C9B7A0, #B98C7D);
+  color: #FFFCFA;
+  position: relative;
+  overflow: hidden;
+}
+.credit-card.theme-1{ background: linear-gradient(135deg, #A6B7C0, #8FA0AC); }
+.credit-card.theme-2{ background: linear-gradient(135deg, #B3C0A4, #93A98B); }
+.credit-card.theme-3{ background: linear-gradient(135deg, #ABA3B0, #8C8393); }
+
+.credit-card-top{
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.credit-card-name{ font-size: 14px; font-weight: 600; }
+.credit-card-actions{ display: flex; align-items: center; gap: 6px; }
+.credit-card-delete, .credit-card-edit{
+  border: none;
+  background: rgba(255,255,255,0.25);
+  color: #fff;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+}
+.credit-card-amount{
+  font-size: 22px;
+  font-weight: 700;
+  margin-top: 14px;
+}
+.credit-card-amount small{ font-size: 11px; font-weight: 400; opacity: .85; display: block; margin-bottom: 2px; }
+
+.credit-card-unbilled-note{
+  font-size: 11px;
+  opacity: .85;
+  margin-top: 8px;
+}
+
+.credit-card-limit{ margin-top: 12px; }
+.limit-bar{
+  width: 100%;
+  height: 5px;
+  border-radius: 100px;
+  background: rgba(255,255,255,0.25);
+  overflow: hidden;
+}
+.limit-fill{
+  height: 100%;
+  background: #fff;
+  border-radius: 100px;
+  transition: width .2s ease;
+}
+.limit-fill.high{ background: #FFD6CE; }
+.limit-text{
+  font-size: 11px;
+  opacity: .92;
+  margin-top: 6px;
+}
+
+.credit-card-bottom{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  font-size: 11px;
+  opacity: .92;
+}
+.due-badge{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255,255,255,0.25);
+  padding: 4px 9px;
+  border-radius: 100px;
+}
+.due-dot{ width: 6px; height: 6px; border-radius: 50%; background: #fff; }
+.due-badge.urgent .due-dot{ background: #FFDCD6; }
+.due-badge.urgent{ background: rgba(197, 90, 74, 0.45); }
+.due-badge.warn .due-dot{ background: #FFF1C7; }
+.due-badge.warn{ background: rgba(211, 178, 106, 0.4); }
+
+.credit-card-pay-btn{
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 9px;
+  border: none;
+  border-radius: 100px;
+  background: rgba(255,255,255,0.92);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.credit-card-pay-btn:hover{ opacity: .85; }
+.credit-card-pay-btn:active{ transform: scale(0.98); }
+
+/* ---------- 待辦清單 ---------- */
+.recurring-item{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.recurring-item:last-child{ border-bottom: none; }
+
+.checkbox{
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  font-size: 12px;
+  transition: all .15s ease;
+}
+.checkbox.checked{
+  background: var(--safe);
+  border-color: var(--safe);
+  color: #fff;
+}
+
+.recurring-main{ flex: 1; min-width: 0; }
+.recurring-name{ font-size: 14px; color: var(--text-primary); }
+.recurring-name.done{ text-decoration: line-through; color: var(--text-faint); }
+.recurring-sub{ font-size: 11px; color: var(--text-faint); margin-top: 2px; }
+.recurring-sub.recurring-auto{ color: var(--safe); }
+.recurring-amount{ font-size: 13px; color: var(--text-secondary); font-weight: 600; white-space: nowrap; }
+.recurring-amount.done{ color: var(--text-faint); text-decoration: line-through; }
+.recurring-actions{ display: flex; align-items: center; gap: 2px; }
+
+/* ---------- 底部導覽 ---------- */
+.bottom-nav{
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 8px 6px calc(10px + env(safe-area-inset-bottom));
+}
+.nav-btn{
+  flex: 1;
+  border: none;
+  background: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 0;
+  font-size: 10px;
+  color: var(--text-faint);
+  cursor: pointer;
+  border-radius: 12px;
+  font-family: inherit;
+}
+.nav-icon{ font-size: 18px; filter: grayscale(1) opacity(0.55); }
+.nav-btn.active{ color: var(--accent); }
+.nav-btn.active .nav-icon{ filter: none; }
+
+/* ---------- Modal ---------- */
+.modal-overlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(92, 84, 75, 0.35);
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 50;
+}
+.modal-overlay.open{ display: flex; }
+
+.modal{
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border-radius: 24px 24px 0 0;
+  padding: 22px 20px calc(20px + env(safe-area-inset-bottom));
+  animation: slideUp .2s ease;
+}
+@keyframes slideUp{
+  from{ transform: translateY(16px); opacity: 0; }
+  to{ transform: translateY(0); opacity: 1; }
+}
+.modal h3{ margin: 0 0 16px; font-size: 16px; color: var(--text-primary); }
+.modal .field-label{ margin-top: 12px; }
+.modal-actions{
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+.modal-actions button{
+  flex: 1;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+}
+.btn-cancel{ background: var(--surface-soft); color: var(--text-secondary); border: 1px solid var(--border) !important; }
+.btn-save{ background: var(--accent); color: #fff; }
+.btn-danger{ background: var(--danger); color: #fff; }
+.confirm-message{
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 4px 2px 0;
+}
+
+/* ---------- 分類關鍵字管理 ---------- */
+.chip-list{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.chip{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.chip.default{ opacity: .7; }
+.chip button{
+  border: none;
+  background: none;
+  color: var(--text-faint);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0;
+  line-height: 1;
+}
+.chip button:hover{ color: var(--danger); }
+.chip-empty{ font-size: 12px; color: var(--text-faint); margin-top: 6px; }
+
+/* ---------- 自訂分類：調色盤 / 計入損益勾選框 ---------- */
+.color-picker-row{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.swatch-list{ display: flex; gap: 6px; flex-wrap: wrap; flex: 1; min-width: 0; }
+.swatch{
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.swatch.selected{ border-color: var(--text-primary); box-shadow: 0 0 0 2px var(--surface); }
+/* 滑動式調色盤（原生色彩選擇器，手機上會叫出系統的調色盤/色輪） */
+.color-well{
+  width: 34px;
+  height: 34px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.color-hex-input{ width: 92px; flex: none; text-transform: uppercase; }
+
+.checkbox-label{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.checkbox-label input[type="checkbox"]{
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+@media (max-width: 460px){
+  /* 手機上改用「固定畫面高度 + 內部捲動」的做法（跟大部分原生 App／
+     LINE 一樣）：.phone 鎖定剛好一個螢幕高，捲動全部收進 .content
+     內部處理，.bottom-nav 就永遠在 .phone 底部、不會消失。
+
+     之前試過讓 .phone 高度不設限、靠 .bottom-nav 的 position:sticky
+     去黏住「外層」的捲動範圍——這在部分內嵌環境（例如 Claude Artifact
+     的預覽框）裡，外層容器本身的捲動跟這個網頁其實是分開的兩層，
+     sticky 黏的對象黏錯了，結果又變回「要滑到最底部才看得到功能列」
+     的舊問題。改成畫面本身不會變高、捲動只在 .content 裡面發生，
+     不管被包在什麼樣的容器裡，都不用去猜測、依賴外層怎麼捲動。 */
+  body{ padding: 0; }
+  .phone{
+    border-radius: 0;
+    max-width: 100%;
+    min-height: 0; /* 蓋掉桌機版預覽用的 780px 下限，避免跟下面的固定高度打架 */
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+  .content{
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none;
+  }
+}

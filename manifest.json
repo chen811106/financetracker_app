@@ -1,0 +1,16 @@
+{
+  "name": "拾光記帳",
+  "short_name": "拾光記帳",
+  "description": "極簡莫蘭迪色系記帳 App：自動分類記帳、月度圓餅圖、帳戶與信用卡管理、週期繳費待辦清單。",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#EFE9E2",
+  "theme_color": "#C9B7A0",
+  "lang": "zh-Hant",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

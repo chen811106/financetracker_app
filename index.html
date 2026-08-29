@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>拾光記帳 · Healing Ledger</title>
+
+<!-- PWA：讓瀏覽器可以「加入主畫面」／安裝為 App -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#C9B7A0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="拾光記帳">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon-192.png">
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<script type="application/json" id="app-state"></script>
+
+<div class="phone">
+
+  <header class="topbar">
+    <div>
+      <p class="topbar-eyebrow">拾光記帳</p>
+      <h1 id="pageTitle">今天想記點什麼？</h1>
+    </div>
+    <div class="topbar-side">
+      <div class="topbar-date" id="todayDate"></div>
+      <span class="sync-badge" id="syncBadge"></span>
+    </div>
+  </header>
+
+  <main class="content">
+
+    <!-- ============ 首頁 / 快速記帳 ============ -->
+    <section id="tab-home" class="tab-panel active">
+
+      <div class="card summary-card">
+        <div class="summary-item">
+          <span>本月支出</span>
+          <strong id="monthTotal">$0</strong>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-item income">
+          <span>本月收入</span>
+          <strong id="monthIncome">$0</strong>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-item">
+          <span>帳戶總餘額</span>
+          <strong id="totalBalance">$0</strong>
+        </div>
+      </div>
+
+      <div class="card add-expense">
+        <div class="section-head">
+          <h2>快速記一筆</h2>
+          <button class="add-mini" id="manageCategoriesBtn">⚙ 管理分類</button>
+        </div>
+
+        <div class="type-toggle" id="typeToggle">
+          <button type="button" class="type-btn active" data-type="expense">支出</button>
+          <button type="button" class="type-btn" data-type="income">收入</button>
+        </div>
+
+        <label class="field-label" id="itemLabel">花費項目</label>
+        <input id="itemInput" class="text-input" placeholder="例如：星巴克拿鐵、加油、房租" autocomplete="off">
+
+        <div class="category-preview" id="categoryPreview">
+          <span class="cat-dot" id="catDot"></span>
+          <span id="catLabel">輸入後將自動判斷分類</span>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label class="field-label">金額</label>
+            <input id="amountInput" class="text-input" type="number" min="0" placeholder="0">
+          </div>
+          <div class="field">
+            <label class="field-label" id="paymentLabel">支付方式</label>
+            <select id="paymentSelect" class="text-input"></select>
+          </div>
+        </div>
+
+        <button id="addBtn" class="primary-btn">新增紀錄</button>
+        <p class="hint-text" id="formHint"></p>
+      </div>
+
+      <div class="card recent-list">
+        <h2>最近紀錄</h2>
+        <ul id="recentList" class="plain-list"></ul>
+        <p class="empty-hint" id="recentEmpty">還沒有任何紀錄，記一筆吧 🌿</p>
+      </div>
+
+    </section>
+
+    <!-- ============ 圖表 ============ -->
+    <section id="tab-chart" class="tab-panel">
+      <div class="card">
+        <div class="section-head">
+          <h2>本月消費分佈</h2>
+          <div class="month-nav">
+            <button id="prevMonth" class="icon-btn" aria-label="上個月">‹</button>
+            <span id="chartMonthLabel"></span>
+            <button id="nextMonth" class="icon-btn" aria-label="下個月">›</button>
+          </div>
+        </div>
+
+        <div class="donut-wrap">
+          <svg id="donutChart" viewBox="0 0 200 200"></svg>
+          <div class="donut-center">
+            <span id="donutTotal">$0</span>
+            <small>總支出</small>
+          </div>
+        </div>
+
+        <ul id="chartLegend" class="legend"></ul>
+        <p class="empty-hint" id="chartEmpty">這個月還沒有支出紀錄</p>
+      </div>
+
+      <div class="card">
+        <div class="section-head">
+          <h2>本月收入分佈</h2>
+        </div>
+
+        <div class="donut-wrap">
+          <svg id="donutChartIncome" viewBox="0 0 200 200"></svg>
+          <div class="donut-center">
+            <span id="donutTotalIncome">$0</span>
+            <small>總收入</small>
+          </div>
+        </div>
+
+        <ul id="chartLegendIncome" class="legend"></ul>
+        <p class="empty-hint" id="chartEmptyIncome">這個月還沒有收入紀錄</p>
+      </div>
+    </section>
+
+    <!-- ============ 帳戶 ============ -->
+    <section id="tab-accounts" class="tab-panel">
+      <div class="card">
+        <div class="section-head">
+          <h2>銀行帳戶</h2>
+          <div class="section-actions">
+            <button class="add-mini secondary" id="transferBtn">⇄ 轉帳</button>
+            <button class="add-mini" id="addAccountBtn">+ 新增帳戶</button>
+          </div>
+        </div>
+        <ul id="accountList" class="plain-list"></ul>
+        <div class="total-row">
+          <span>帳戶總餘額</span>
+          <strong id="accountsTotal">$0</strong>
+        </div>
+        <p class="hint-text">記帳時若選擇銀行帳戶付款，餘額會自動連動扣除；帳戶之間互轉不會影響本月支出/收入統計。</p>
+      </div>
+
+      <div class="card">
+        <div class="section-head">
+          <h2>資料管理</h2>
+        </div>
+        <p class="hint-text" style="margin-top:0;">把逐月的支出/收入/信用卡繳款紀錄整理成一段文字，方便自己複製保存；也可以在保存好之後把這些紀錄清空，帳戶、信用卡、現金餘額、待辦清單、分類設定都不會被動到。</p>
+        <p class="hint-text">建議每 3 個月匯出一次文字存起來，養成定期備份的習慣，不用等到資料很多才做。資料是存在這個瀏覽器裡的，請不要清除瀏覽器的「瀏覽資料/快取」，清掉的話會連同這裡的記帳資料一起消失、無法復原。</p>
+        <button class="add-mini secondary" id="exportBtn" style="width:100%;">📤 匯出/清理記帳紀錄</button>
+      </div>
+    </section>
+
+    <!-- ============ 信用卡 ============ -->
+    <section id="tab-cards" class="tab-panel">
+      <div class="card">
+        <div class="section-head">
+          <h2>信用卡管理</h2>
+          <button class="add-mini" id="addCardBtn">+ 新增卡片</button>
+        </div>
+        <ul id="cardList" class="card-list"></ul>
+        <p class="empty-hint" id="cardsEmpty">還沒有新增信用卡</p>
+      </div>
+    </section>
+
+    <!-- ============ 週期待辦 ============ -->
+    <section id="tab-checklist" class="tab-panel">
+      <div class="card">
+        <div class="section-head">
+          <h2>週期性繳費清單</h2>
+          <button class="add-mini" id="addRecurringBtn">+ 新增項目</button>
+        </div>
+
+        <p class="hint-text">每一筆都可以自訂「每月幾號」自動重置為未繳納，繳款截止日不同就設不同天數即可。</p>
+
+        <ul id="recurringList" class="plain-list"></ul>
+        <p class="empty-hint" id="recurringEmpty">還沒有固定繳費項目</p>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="bottom-nav">
+    <button data-tab="home" class="nav-btn active"><span class="nav-icon">🏠</span><span>首頁</span></button>
+    <button data-tab="chart" class="nav-btn"><span class="nav-icon">📊</span><span>圖表</span></button>
+    <button data-tab="accounts" class="nav-btn"><span class="nav-icon">🏦</span><span>帳戶</span></button>
+    <button data-tab="cards" class="nav-btn"><span class="nav-icon">💳</span><span>信用卡</span></button>
+    <button data-tab="checklist" class="nav-btn"><span class="nav-icon">📝</span><span>待辦</span></button>
+  </nav>
+
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalBody"></div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
