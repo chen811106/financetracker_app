@@ -58,7 +58,12 @@ html{
      maximum-scale／user-scalable=no，所以縮放要靠這個 touch-action 加上
      下面 app.js 裡的手勢攔截，兩層一起擋才會真的擋住。 */
   touch-action: pan-x pan-y;
+  /* 螢幕比較寬（手機版 media query 沒生效）時，捲動的是整個頁面，
+     這邊也一併把原生捲軸藏起來，跟 .content 保持一致的 App 感。 */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
+html::-webkit-scrollbar{ display: none; }
 
 body{
   margin: 0;
@@ -181,6 +186,27 @@ body{
 .content{
   flex: 1;
   padding: 4px 18px 20px;
+}
+
+/* ---------- 隱藏捲軸（原生 App 感） ----------
+   一般瀏覽器（尤其手機版 Safari）捲動 .content、彈窗裡的清單這些
+   overflow:auto 的區塊時，會冒出那條細細的捲軸／捲動指示條，看起來
+   很像「網頁」而不是「App」。在 Claude Artifact 裡看不到這條，是因為
+   那邊的渲染環境本來就不會顯示；一般網頁部署（例如加到主畫面的
+   PWA）預設會照瀏覽器原生行為顯示出來。這裡把它藏起來——只是不畫
+   捲軸而已，滑動捲動本身完全不受影響。 */
+.content,
+.guide-content,
+.modal-scroll-list,
+.export-textarea{
+  scrollbar-width: none;      /* Firefox */
+  -ms-overflow-style: none;   /* 舊版 Edge / IE */
+}
+.content::-webkit-scrollbar,
+.guide-content::-webkit-scrollbar,
+.modal-scroll-list::-webkit-scrollbar,
+.export-textarea::-webkit-scrollbar{
+  display: none;              /* Safari / Chrome 等 WebKit / Blink 核心 */
 }
 
 .tab-panel{ display: none; animation: fadeIn .25s ease; }
