@@ -1898,6 +1898,28 @@
      照分頁順序把每個功能講一遍，之後新增功能記得回來這裡補一段。 */
   document.getElementById("guideBtn").addEventListener("click", openGuideModal);
 
+  // 最後一段「有沒有雲端同步」看 cloudApi 有沒有初始化成功來決定內容：
+  // 在 Claude Artifact 裡打開，cloudApi 是真的有東西，講同步；單獨存成
+  // 檔案或部署成一般網頁打開，cloudApi 是 null，改成純粹的備份提醒。
+  // 這樣同一份程式碼不管部署在哪裡，這段文字都會自動對，不用手動維護
+  // 兩個版本。
+  function guideSyncSection() {
+    if (cloudApi) {
+      return `
+        <h4>☁ 同步與備份</h4>
+        <ul>
+          <li>右上角顯示「☁ 雲端同步中」代表資料會自動同步，同一個連結在不同裝置打開都會看到最新資料</li>
+          <li>還是建議定期用「資料管理」的匯出功能備份一份文字，多一層保障</li>
+        </ul>`;
+    }
+    return `
+      <h4>💾 備份提醒</h4>
+      <ul>
+        <li>建議每隔一段時間（例如每 3 個月）就用「資料管理」裡的匯出功能備份一次文字紀錄</li>
+        <li>資料是存在這個瀏覽器裡的，請不要清除瀏覽器的快取／瀏覽資料，清掉的話記帳資料會一起消失、無法復原</li>
+      </ul>`;
+  }
+
   function openGuideModal() {
     modalBody.innerHTML = `
       <h3>使用說明</h3>
@@ -1943,12 +1965,7 @@
           <li>每個分類（內建、自訂都可以）都能設定「是否計入本月支出/收入統計」</li>
         </ul>
 
-        <h4>☁ 同步與備份</h4>
-        <ul>
-          <li>右上角顯示「☁ 雲端同步中」代表資料會自動同步，同一個連結在不同裝置打開都會看到最新資料</li>
-          <li>沒有這個雲端 capability 時（例如把網頁單獨存成檔案使用），資料只會存在該裝置的瀏覽器裡，不會跨裝置同步</li>
-          <li>不管有沒有雲端同步，都建議定期用「資料管理」的匯出功能備份一份文字</li>
-        </ul>
+        ${guideSyncSection()}
       </div>
       <div class="modal-actions">
         <button class="btn-save" id="guideCloseBtn" style="flex:1;">知道了</button>

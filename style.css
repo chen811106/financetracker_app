@@ -100,8 +100,8 @@ body{
 .topbar-eyebrow-row{
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin: 0 0 4px;
+  gap: 8px;
+  margin: 0 0 6px;
 }
 .topbar-eyebrow{
   margin: 0;
@@ -109,14 +109,17 @@ body{
   letter-spacing: 2px;
   color: var(--text-faint);
 }
+/* 跟月份切換那顆 .icon-btn 用同一套尺寸／樣式（24px、有邊框、
+   有底色），不要做得太小——太小既不好點、看起來也像個沒對齊好的
+   小雜點，24px 是這個 App 裡已經驗證過好點、看起來也乾淨的大小。 */
 .guide-btn{
-  border: 1px solid var(--text-faint);
-  background: none;
-  color: var(--text-faint);
-  width: 15px;
-  height: 15px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  font-size: 11px;
+  font-size: 14px;
   line-height: 1;
   cursor: pointer;
   display: flex;
@@ -125,7 +128,8 @@ body{
   padding: 0;
   flex-shrink: 0;
 }
-.guide-btn:hover{ color: var(--accent); border-color: var(--accent); }
+.guide-btn:hover{ background: var(--accent-soft); color: var(--accent); }
+.guide-btn:active{ transform: scale(0.94); }
 
 /* ---------- 使用說明 ---------- */
 .guide-content{
