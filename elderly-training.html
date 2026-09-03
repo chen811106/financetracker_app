@@ -27,6 +27,7 @@
   }
   body { display: flex; justify-content: center; align-items: center; }
   * { touch-action: manipulation; } /* 移除300ms點擊延遲與雙指縮放 */
+  [hidden] { display: none !important; } /* 保證 .hidden 切換一定生效，不被下面的 display:flex 規則蓋過 */
 
   #app-frame {
     width: 100%; max-width: 414px;
@@ -39,7 +40,7 @@
   /* 共用介面 */
   .screen { width: 100%; height: 100%; position: absolute; top: 0; left: 0; background: #f2f2f7; display: flex; flex-direction: column; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
   .screen.active { opacity: 1; pointer-events: auto; }
-  .header { height: 60px; padding-top: env(safe-area-inset-top); height: calc(60px + env(safe-area-inset-top)); background: #fff; display: flex; align-items: center; padding-left: 15px; padding-right: 15px; font-size: 20px; font-weight: bold; box-sizing: border-box; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 2; }
+  .header { height: 60px; padding-top: env(safe-area-inset-top); height: calc(60px + env(safe-area-inset-top)); background: #fff; display: flex; align-items: center; padding-left: 15px; padding-right: 15px; font-size: 20px; font-weight: bold; box-sizing: border-box; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 2; position: relative; }
   .back-btn { margin-right: 15px; cursor: pointer; font-size: 24px; padding: 5px 10px 5px 0; color: #007aff; }
   .content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 15px; box-sizing: border-box; position: relative; }
 
@@ -90,38 +91,92 @@
   .chat-name { font-size: 18px; font-weight: bold; color: #111; margin-bottom: 6px; }
   .chat-preview { font-size: 15px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-  /* LINE 聊天室 */
-  #line-chat { background: #749cbd; z-index: 10; }
-  #line-chat .header { background: #272727; color: white; opacity: 0.95; }
-  .chat-messages { flex: 1; padding: 15px; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 15px; }
-  .msg-bubble { max-width: 75%; padding: 10px 15px; border-radius: 18px; font-size: 18px; line-height: 1.4; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.1); word-break: break-word; }
-  .msg-received { background: white; color: #111; align-self: flex-start; border-top-left-radius: 4px; }
-  .msg-sent { background: #85e249; color: #111; align-self: flex-end; border-top-right-radius: 4px; }
+  /* LINE 聊天室 (個人 + 群組共用) */
+  #line-chat, #line-group-chat { background: #749cbd; z-index: 10; }
+  #line-chat .header, #line-group-chat .header { background: #272727; color: white; opacity: 0.95; }
+  .chat-messages { flex: 1; padding: 15px; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 12px; }
+  .chat-date-sep { align-self: center; background: rgba(0,0,0,0.12); color: #fff; font-size: 12px; padding: 4px 14px; border-radius: 12px; margin: 4px 0; }
+  .msg-row { display: flex; flex-direction: column; max-width: 75%; }
+  .msg-row-sent { align-self: flex-end; align-items: flex-end; }
+  .msg-row-received { align-self: flex-start; align-items: flex-start; }
+  .msg-bubble { padding: 10px 15px; border-radius: 18px; font-size: 18px; line-height: 1.4; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.1); word-break: break-word; }
+  .msg-received { background: white; color: #111; border-top-left-radius: 4px; }
+  .msg-sent { background: #85e249; color: #111; border-top-right-radius: 4px; }
+  .msg-time { font-size: 11px; color: rgba(0,0,0,0.55); text-shadow: 0 1px 1px rgba(255,255,255,0.4); margin-top: 3px; padding: 0 4px; }
+
+  /* 長輩圖卡片 */
+  .elder-card { width: 220px; padding: 22px 16px; border-radius: 12px; border: 3px solid rgba(255,255,255,0.6); box-shadow: 0 3px 8px rgba(0,0,0,0.2); text-align: center; }
+  .elder-card-title { font-size: 19px; font-weight: 900; color: #5a3d1a; text-shadow: 1px 1px 0 rgba(255,255,255,0.5); margin-bottom: 10px; }
+  .elder-card-body { font-size: 14px; color: #5a3d1a; line-height: 1.6; font-weight: bold; }
 
   /* 輸入區 */
-  .chat-input-area { background: #f4f4f4; padding: 12px 15px; display: flex; align-items: center; gap: 12px; border-top: 1px solid #ccc; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  .chat-input-area { background: #f4f4f4; padding: 12px 15px; display: flex; align-items: center; gap: 10px; border-top: 1px solid #ccc; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  .input-plus { width: 36px; height: 36px; border-radius: 50%; background: #e5e5ea; color: #666; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; flex-shrink: 0; }
   .chat-input { flex: 1; border: none; border-radius: 20px; padding: 12px 15px; font-size: 18px; outline: none; background: #fff; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); }
   .btn-mic { width: 44px; height: 44px; border-radius: 50%; background: #06C755; border: none; font-size: 22px; display: flex; justify-content: center; align-items: center; cursor: pointer; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: transform 0.1s; flex-shrink: 0; }
   .btn-mic:active { transform: scale(0.9); }
-  .recording-indicator { display: none; color: #ff3b30; font-weight: bold; font-size: 16px; margin-left: 10px; animation: blink 1s infinite; }
+  .recording-indicator { display: none; color: #ff3b30; font-weight: bold; font-size: 15px; animation: blink 1s infinite; flex-shrink: 0; }
   @keyframes blink { 50% { opacity: 0; } }
 
-  /* LINE 來電畫面 */
+  /* LINE 通話選單 (點電話圖示彈出) */
+  .call-menu { position: absolute; top: calc(60px + env(safe-area-inset-top)); left: 0; right: 0; background: #fff; display: flex; z-index: 6; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+  .call-menu-item { flex: 1; text-align: center; padding: 16px 0; font-size: 14px; color: #333; font-weight: bold; border-right: 1px solid #eee; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .call-menu-item:last-child { border-right: none; }
+  .call-menu-item:active { background: #f5f5f5; }
+
+  /* LINE 來電/通話畫面 */
   #line-call { background: #222; color: white; z-index: 20; align-items: center; padding-top: calc(15vh + env(safe-area-inset-top)); }
   .call-avatar { width: 140px; height: 140px; border-radius: 50%; background: #e1e1e1; display: flex; justify-content: center; align-items: center; font-size: 70px; margin-bottom: 25px; }
+  .video-preview { width: 240px; height: 170px; border-radius: 16px; margin-bottom: 25px; background: linear-gradient(135deg,#3a3a3a,#5a5a5a); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; color: #bbb; font-size: 13px; text-align: center; padding: 10px; box-sizing: border-box; }
+  .video-preview::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0 2px, transparent 2px 4px); pointer-events: none; }
+  .pip-self { position: absolute; bottom: 10px; right: 10px; width: 55px; height: 75px; background: #444; border-radius: 10px; border: 2px solid rgba(255,255,255,0.5); display: flex; align-items: center; justify-content: center; font-size: 26px; }
   .call-name { font-size: 32px; font-weight: bold; margin-bottom: 12px; }
   .call-status { font-size: 20px; color: #ccc; margin-bottom: 15vh; }
   .call-actions { display: flex; gap: 70px; width: 100%; justify-content: center; padding-bottom: env(safe-area-inset-bottom); }
   .call-action-wrap { display: flex; flex-direction: column; align-items: center; gap: 15px; }
   .btn-call { width: 85px; height: 85px; border-radius: 50%; border: none; display: flex; justify-content: center; align-items: center; font-size: 40px; color: white; cursor: pointer; }
   .btn-call:active { transform: scale(0.92); }
+  .btn-call.small { width: 60px; height: 60px; font-size: 26px; }
   .btn-decline { background: #ff3b30; }
   .btn-answer { background: #34c759; animation: pulse 1.5s infinite; }
   .call-label { font-size: 18px; color: white; font-weight: bold; }
   @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.7); } 70% { box-shadow: 0 0 0 25px rgba(52, 199, 89, 0); } 100% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0); } }
 
+  /* 滑動接聽 */
+  .call-actions-swipe { display: flex; align-items: center; gap: 18px; width: 100%; justify-content: center; padding: 0 20px; box-sizing: border-box; padding-bottom: env(safe-area-inset-bottom); }
+  .swipe-track { position: relative; width: 220px; height: 62px; background: rgba(255,255,255,0.18); border-radius: 31px; display: flex; align-items: center; padding: 4px; box-sizing: border-box; overflow: hidden; }
+  .swipe-track-label { position: absolute; left: 0; right: 0; text-align: center; color: rgba(255,255,255,0.85); font-size: 15px; font-weight: bold; pointer-events: none; }
+  .swipe-handle { width: 54px; height: 54px; border-radius: 50%; background: #34c759; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; position: relative; z-index: 2; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+  .swipe-handle, .swipe-track { touch-action: none; }
+
   /* 提示彈窗 */
   #toast { position: absolute; top: calc(40px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: white; padding: 15px 25px; border-radius: 30px; font-size: 18px; display: none; z-index: 100; text-align: center; white-space: nowrap; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+
+  /* 反應力訓練 - 遊戲選單 */
+  .game-card { display: flex; align-items: center; gap: 15px; background: #fff; border-radius: 14px; padding: 18px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); cursor: pointer; }
+  .game-card:active { transform: scale(0.98); }
+  .game-icon { font-size: 32px; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; background: #f2f2f7; border-radius: 14px; flex-shrink: 0; }
+  .game-title { font-size: 19px; font-weight: bold; color: #111; margin-bottom: 4px; }
+  .game-desc { font-size: 14px; color: #888; }
+  .game-score-board { display: flex; justify-content: space-between; font-size: 17px; font-weight: bold; background: #fff; padding: 14px 18px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+  .game-instruction { text-align: center; color: #666; font-size: 16px; font-weight: bold; margin-bottom: 20px; }
+
+  /* 顏色反應遊戲 */
+  .color-swatch { width: 100%; height: 120px; border-radius: 16px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+  .color-choices { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .color-choice-btn { padding: 22px 0; border-radius: 12px; border: none; font-size: 19px; font-weight: bold; color: #fff; cursor: pointer; box-shadow: 0 3px 6px rgba(0,0,0,0.2); text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+  .color-choice-btn:active { transform: scale(0.96); }
+
+  /* 紅綠燈反應遊戲 */
+  .light-circle { width: 200px; height: 200px; border-radius: 50%; border: none; font-size: 22px; font-weight: bold; color: #fff; background: #999; box-shadow: 0 6px 16px rgba(0,0,0,0.15); cursor: pointer; margin: 15px auto 0; display: block; }
+  .light-circle.go { background: #34c759; }
+  .light-circle.stop { background: #ff3b30; }
+
+  /* 詐騙關鍵字反應遊戲 */
+  .scam-message-box { background: #fff; border-radius: 14px; padding: 25px 20px; font-size: 19px; font-weight: bold; color: #111; line-height: 1.5; margin-bottom: 15px; min-height: 100px; display: flex; align-items: center; justify-content: center; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+  .scam-timer-bar { height: 8px; background: #e5e5ea; border-radius: 4px; overflow: hidden; margin-bottom: 20px; }
+  .scam-timer-fill { height: 100%; background: #007aff; width: 100%; }
+  .scam-choices { display: flex; gap: 15px; }
 </style>
 </head>
 <body>
@@ -141,6 +196,10 @@
       <div class="app-icon-wrapper" onclick="openApp('line-app')">
         <div class="app-icon line">💬</div>
         <div class="app-label">LINE模擬</div>
+      </div>
+      <div class="app-icon-wrapper" onclick="openApp('reaction-app')">
+        <div class="app-icon fraud">🧠</div>
+        <div class="app-label">反應力訓練</div>
       </div>
     </div>
   </div>
@@ -196,17 +255,17 @@
         <div class="banner-btn" onclick="triggerIncomingCall()">📞 點此模擬：孫子打電話來</div>
       </div>
       <div class="chat-list">
-        <div class="chat-item" onclick="openLineChat()">
+        <div class="chat-item" onclick="openChatRoom('line-chat')">
           <div class="avatar">👦</div>
           <div class="chat-info">
-            <div class="chat-name">乖孫 凱凱</div>
+            <div class="chat-name">陳修群</div>
             <div class="chat-preview">阿公，你吃飽了嗎？</div>
           </div>
         </div>
-        <div class="chat-item">
+        <div class="chat-item" onclick="openChatRoom('line-group-chat')">
           <div class="avatar">👨‍👩‍👧‍👦</div>
           <div class="chat-info">
-            <div class="chat-name">快樂一家人</div>
+            <div class="chat-name">阿不拉姐妹</div>
             <div class="chat-preview">[圖片] 早安！祝大家平安喜樂。</div>
           </div>
         </div>
@@ -214,36 +273,152 @@
     </div>
   </div>
 
-  <!-- LINE 模擬器 - 聊天室 -->
+  <!-- LINE 模擬器 - 個人聊天室 (陳修群) -->
   <div id="line-chat" class="screen">
     <div class="header">
-      <div class="back-btn" onclick="closeLineChat()" style="color:white;">◀</div>
-      <div style="flex:1;">乖孫 凱凱</div>
-      <div style="font-size:24px;">📞</div>
+      <div class="back-btn" onclick="closeChatRoom('line-chat')" style="color:white;">◀</div>
+      <div style="flex:1;">陳修群</div>
+      <div style="font-size:24px; cursor:pointer;" onclick="toggleCallMenu()">📞</div>
     </div>
-    <div class="chat-messages" id="chat-messages">
-      <div class="msg-bubble msg-received">阿公，你吃飽了嗎？</div>
+    <div class="call-menu" id="call-menu" hidden>
+      <div class="call-menu-item" onclick="startOutgoingCall('voice')"><div style="font-size:22px;">📞</div>語音通話</div>
+      <div class="call-menu-item" onclick="startOutgoingCall('video')"><div style="font-size:22px;">🎥</div>視訊通話</div>
     </div>
+    <div class="chat-messages" id="chat-messages"></div>
     <div class="chat-input-area">
-      <input type="text" class="chat-input" placeholder="Aa" readonly onclick="showToast('請練習按右邊的麥克風用語音輸入')">
+      <div class="input-plus" onclick="showToast('訓練版本先不開放傳送圖片，用文字或語音跟修群說就可以囉')">➕</div>
+      <input type="text" id="chat-text-input" class="chat-input" placeholder="輸入訊息..." oninput="updateSendButton()" onkeydown="if(event.key==='Enter'){sendChatMessage();}">
       <span class="recording-indicator" id="recording-indicator">聆聽中...</span>
       <button class="btn-mic" id="btn-mic" onclick="handleVoiceInput()">🎤</button>
+      <button class="btn-mic" id="btn-send" onclick="sendChatMessage()" hidden>➤</button>
     </div>
   </div>
 
-  <!-- LINE 模擬器 - 來電畫面 -->
+  <!-- LINE 模擬器 - 群組聊天室 (阿不拉姐妹) -->
+  <div id="line-group-chat" class="screen">
+    <div class="header">
+      <div class="back-btn" onclick="closeChatRoom('line-group-chat')" style="color:white;">◀</div>
+      <div style="flex:1;">阿不拉姐妹 (4)</div>
+    </div>
+    <div class="chat-messages" id="group-chat-messages"></div>
+    <div class="chat-input-area">
+      <div class="input-plus" onclick="showToast('訓練版本先不開放傳送圖片喔')">➕</div>
+      <input type="text" id="group-text-input" class="chat-input" placeholder="輸入訊息..." oninput="updateSendButton()" onkeydown="if(event.key==='Enter'){sendChatMessage();}">
+      <span class="recording-indicator" id="group-recording-indicator">聆聽中...</span>
+      <button class="btn-mic" id="group-btn-mic" onclick="handleVoiceInput()">🎤</button>
+      <button class="btn-mic" id="group-btn-send" onclick="sendChatMessage()" hidden>➤</button>
+    </div>
+  </div>
+
+  <!-- LINE 模擬器 - 來電/通話畫面 -->
   <div id="line-call" class="screen">
-    <div class="call-avatar">👦</div>
-    <div class="call-name">乖孫 凱凱</div>
+    <div class="call-avatar" id="call-avatar">👦</div>
+    <div class="video-preview" id="call-video-preview" hidden>
+      <span>視訊畫面（訓練用，鏡頭未開啟）</span>
+      <div class="pip-self">🧑</div>
+    </div>
+    <div class="call-name">陳修群</div>
     <div class="call-status">LINE 語音通話來電...</div>
-    <div class="call-actions">
-      <div class="call-action-wrap" id="decline-wrap">
+
+    <div class="call-actions" id="call-actions-tap" hidden>
+      <div class="call-action-wrap">
         <button class="btn-call btn-decline" onclick="answerCall(false)">✕</button>
         <span class="call-label">拒絕</span>
       </div>
-      <div class="call-action-wrap" id="answer-wrap">
+      <div class="call-action-wrap">
         <button class="btn-call btn-answer" onclick="answerCall(true)">📞</button>
         <span class="call-label">接聽</span>
+      </div>
+    </div>
+
+    <div class="call-actions-swipe" id="call-actions-swipe" hidden>
+      <button class="btn-call btn-decline small" onclick="answerCall(false)">✕</button>
+      <div class="swipe-track" id="swipe-track">
+        <span class="swipe-track-label">→ 滑動接聽</span>
+        <div class="swipe-handle" id="swipe-handle">📞</div>
+      </div>
+    </div>
+
+    <div class="call-actions" id="call-actions-single" hidden>
+      <div class="call-action-wrap">
+        <button class="btn-call btn-decline" onclick="answerCall(false)">✕</button>
+        <span class="call-label" id="single-call-label">取消</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 反應力訓練 - 選單 -->
+  <div id="reaction-app" class="screen">
+    <div class="header">
+      <div class="back-btn" onclick="openApp('home-screen')">◀</div>
+      <div>反應力訓練</div>
+    </div>
+    <div class="content">
+      <div class="game-card" onclick="openGame('game-color')">
+        <div class="game-icon">🎨</div>
+        <div>
+          <div class="game-title">顏色反應</div>
+          <div class="game-desc">看到顏色，選出一樣的顏色</div>
+        </div>
+      </div>
+      <div class="game-card" onclick="openGame('game-light')">
+        <div class="game-icon">🚦</div>
+        <div>
+          <div class="game-title">紅綠燈反應</div>
+          <div class="game-desc">綠燈快按，紅燈不要按</div>
+        </div>
+      </div>
+      <div class="game-card" onclick="openGame('game-scam')">
+        <div class="game-icon">🚨</div>
+        <div>
+          <div class="game-title">詐騙關鍵字</div>
+          <div class="game-desc">看訊息，快速判斷是不是詐騙</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 遊戲一：顏色反應 -->
+  <div id="game-color" class="screen">
+    <div class="header">
+      <div class="back-btn" onclick="exitGame('game-color')">◀</div>
+      <div>顏色反應</div>
+    </div>
+    <div class="content">
+      <div class="game-score-board"><span>第 <span id="color-round">1</span>/10 題</span><span>答對：<span id="color-correct">0</span></span></div>
+      <div class="color-swatch" id="color-swatch"></div>
+      <div class="game-instruction">請點選跟上面一樣的顏色</div>
+      <div class="color-choices" id="color-choices"></div>
+    </div>
+  </div>
+
+  <!-- 遊戲二：紅綠燈反應 -->
+  <div id="game-light" class="screen">
+    <div class="header">
+      <div class="back-btn" onclick="exitGame('game-light')">◀</div>
+      <div>紅綠燈反應</div>
+    </div>
+    <div class="content">
+      <div class="game-score-board"><span>第 <span id="light-round">0</span>/10 次</span><span>正確：<span id="light-correct">0</span></span></div>
+      <div class="game-instruction">綠燈快按！紅燈不要按！</div>
+      <button class="light-circle" id="light-circle" onclick="handleLightTap()">請稍候...</button>
+      <div class="game-instruction" id="light-result" style="margin-top:20px;"></div>
+    </div>
+  </div>
+
+  <!-- 遊戲三：詐騙關鍵字反應 -->
+  <div id="game-scam" class="screen">
+    <div class="header">
+      <div class="back-btn" onclick="exitGame('game-scam')">◀</div>
+      <div>詐騙關鍵字反應</div>
+    </div>
+    <div class="content">
+      <div class="game-score-board"><span>第 <span id="scam-round">1</span>/10 題</span><span>答對：<span id="scam-correct">0</span></span></div>
+      <div class="scam-message-box" id="scam-message-box">載入中...</div>
+      <div class="scam-timer-bar"><div class="scam-timer-fill" id="scam-timer-fill"></div></div>
+      <div class="scam-choices">
+        <button class="btn-stock btn-sell" onclick="handleScamChoice(false)">✅ 正常訊息</button>
+        <button class="btn-stock btn-buy" onclick="handleScamChoice(true)">🚨 這是詐騙</button>
       </div>
     </div>
   </div>
@@ -251,11 +426,14 @@
 </div>
 
 <script>
-  /* 共用邏輯 */
+  /* ============ 共用邏輯 ============ */
   function vibrate(pattern) {
     if (navigator.vibrate) { try { navigator.vibrate(pattern); } catch (e) {} }
   }
-
+  function nowTime() {
+    const d = new Date();
+    return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  }
   function openApp(id) {
     document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
     document.getElementById(id).classList.add('active');
@@ -268,7 +446,7 @@
     setTimeout(() => { toast.style.display = 'none'; }, 2500);
   }
 
-  /* 台股訓練邏輯 */
+  /* ============ 台股訓練邏輯 ============ */
   const companies = [
     { name: '台積電', code: '2330' }, { name: '鴻海', code: '2317' },
     { name: '聯發科', code: '2454' }, { name: '長榮', code: '2603' },
@@ -293,12 +471,10 @@
     updateStockUI();
     nextStockQuestion();
   }
-
   function updateStockUI() {
     document.getElementById('stock-score').innerText = score.toLocaleString();
     document.getElementById('stock-round').innerText = round;
   }
-
   function nextStockQuestion() {
     document.getElementById('action-area').style.display = 'block';
     document.getElementById('unit-area').style.display = 'none';
@@ -308,7 +484,6 @@
     document.getElementById('stock-code').innerText = currentStock.code;
     document.getElementById('stock-event').innerText = currentEvent.text;
   }
-
   function handleStockDecision(decision) {
     if (decision === currentEvent.trend) {
       vibrate(30);
@@ -316,7 +491,6 @@
       score += 5000;
       document.getElementById('action-area').style.display = 'none';
       document.getElementById('unit-area').style.display = 'flex';
-      // 隨機要求買張或股
       const targetUnit = Math.random() > 0.5 ? '1張' : '100股';
       document.getElementById('unit-prompt').innerText = `請點擊下單：【${targetUnit}】`;
       document.getElementById('unit-area').setAttribute('data-target', targetUnit);
@@ -327,7 +501,6 @@
     }
     updateStockUI();
   }
-
   function handleUnitDecision(unit) {
     const target = document.getElementById('unit-area').getAttribute('data-target');
     if (unit === target) {
@@ -344,14 +517,117 @@
     }
   }
 
-  /* LINE 模擬邏輯 */
-  function openLineChat() {
+  /* ============ LINE 聊天室邏輯 ============ */
+  const chatRooms = {
+    'line-chat': {
+      messagesId: 'chat-messages', inputId: 'chat-text-input', micId: 'btn-mic',
+      sendId: 'btn-send', indicatorId: 'recording-indicator',
+      replies: ['好喔！', '😆👍', '我知道了，阿公', '哈哈對啊', '我等一下回你']
+    },
+    'line-group-chat': {
+      messagesId: 'group-chat-messages', inputId: 'group-text-input', micId: 'group-btn-mic',
+      sendId: 'group-btn-send', indicatorId: 'group-recording-indicator',
+      replies: ['早安啊😄', '讚讚', '謝謝分享🙏', '大家平安喜樂']
+    }
+  };
+  let activeRoom = 'line-chat';
+  function currentRoom() { return chatRooms[activeRoom]; }
+
+  function openChatRoom(id) {
     document.getElementById('line-app').classList.remove('active');
-    document.getElementById('line-chat').classList.add('active');
+    document.getElementById(id).classList.add('active');
+    activeRoom = id;
+    if (id === 'line-chat') renderGrandsonChat();
+    if (id === 'line-group-chat') renderGroupChat();
+    updateSendButton();
   }
-  function closeLineChat() {
-    document.getElementById('line-chat').classList.remove('active');
+  function closeChatRoom(id) {
+    document.getElementById(id).classList.remove('active');
     document.getElementById('line-app').classList.add('active');
+    document.getElementById('call-menu').hidden = true;
+  }
+
+  function appendMessage(text, type, time, containerId) {
+    containerId = containerId || 'chat-messages';
+    const chat = document.getElementById(containerId);
+    const row = document.createElement('div');
+    row.className = 'msg-row msg-row-' + type;
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble msg-' + type;
+    bubble.innerText = text;
+    row.appendChild(bubble);
+    if (time) {
+      const t = document.createElement('div');
+      t.className = 'msg-time';
+      t.innerText = time;
+      row.appendChild(t);
+    }
+    chat.appendChild(row);
+    chat.scrollTop = chat.scrollHeight;
+  }
+  function appendElderCard(title, body, bg, containerId) {
+    const chat = document.getElementById(containerId);
+    const row = document.createElement('div');
+    row.className = 'msg-row msg-row-received';
+    const card = document.createElement('div');
+    card.className = 'elder-card';
+    card.style.background = bg;
+    card.innerHTML = `<div class="elder-card-title">${title}</div><div class="elder-card-body">${body.replace(/\n/g, '<br>')}</div>`;
+    row.appendChild(card);
+    chat.appendChild(row);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function renderGrandsonChat() {
+    const chat = document.getElementById('chat-messages');
+    chat.innerHTML = '';
+    const sep = document.createElement('div');
+    sep.className = 'chat-date-sep';
+    sep.innerText = '9月2日';
+    chat.appendChild(sep);
+    appendMessage('阿公早安，今天天氣不錯，記得多喝水喔', 'received', '08:02');
+    appendMessage('好，你也要顧身體，不要太晚睡', 'sent', '08:10');
+    appendMessage('禮拜天我回去吃飯，阿公想吃什麼跟我說', 'received', '19:41');
+    appendMessage('都可以，你回來就好', 'sent', '19:50');
+    const sep2 = document.createElement('div');
+    sep2.className = 'chat-date-sep';
+    sep2.innerText = '今天';
+    chat.appendChild(sep2);
+    appendMessage('阿公，你吃飽了嗎？', 'received', '12:03');
+  }
+
+  function renderGroupChat() {
+    const id = 'group-chat-messages';
+    const chat = document.getElementById(id);
+    chat.innerHTML = '';
+    appendMessage('大家早安，今天也要平安喜樂😊', 'received', '07:12', id);
+    appendElderCard('🌸 早安 🌸', '平安、健康、喜樂\n祝福您有美好的一天', 'linear-gradient(135deg,#ffe29f,#ffa99f)', id);
+    appendMessage('好漂亮的圖喔', 'received', '07:15', id);
+    appendElderCard('🙏 感恩惜福 🙏', 'Have A Nice Day\n心存善念 福自來', 'linear-gradient(135deg,#a1c4fd,#c2e9fb)', id);
+    appendMessage('謝謝分享，姐妹們早安', 'sent', '07:20', id);
+    appendElderCard('🌅 健康就是福 🌅', '早睡早起身體好\n多喝溫水常運動', 'linear-gradient(135deg,#d4fc79,#96e6a1)', id);
+  }
+
+  function updateSendButton() {
+    const r = currentRoom();
+    const input = document.getElementById(r.inputId);
+    const hasText = input.value.trim().length > 0;
+    document.getElementById(r.micId).hidden = hasText;
+    document.getElementById(r.sendId).hidden = !hasText;
+  }
+  function sendChatMessage() {
+    const r = currentRoom();
+    const input = document.getElementById(r.inputId);
+    const text = input.value.trim();
+    if (!text) return;
+    appendMessage(text, 'sent', nowTime(), r.messagesId);
+    input.value = '';
+    updateSendButton();
+    vibrate(10);
+    setTimeout(() => {
+      const reply = r.replies[Math.floor(Math.random() * r.replies.length)];
+      appendMessage(reply, 'received', nowTime(), r.messagesId);
+    }, 1200 + Math.random() * 800);
   }
 
   /* 語音輸入模擬 */
@@ -365,7 +641,7 @@
 
     recognition.onresult = function (event) {
       const text = event.results[0][0].transcript;
-      appendMessage(text, 'sent');
+      appendMessage(text, 'sent', nowTime(), currentRoom().messagesId);
       stopVoiceUI();
     };
     recognition.onerror = function () {
@@ -377,8 +653,9 @@
   }
 
   function handleVoiceInput() {
-    const indicator = document.getElementById('recording-indicator');
-    const micBtn = document.getElementById('btn-mic');
+    const r = currentRoom();
+    const indicator = document.getElementById(r.indicatorId);
+    const micBtn = document.getElementById(r.micId);
     indicator.style.display = 'inline';
     micBtn.style.background = '#ff3b30'; // 變紅色表示錄音中
     vibrate(20);
@@ -387,94 +664,344 @@
       try { recognition.start(); }
       catch (e) { fallbackVoice(); stopVoiceUI(); }
     } else {
-      // 瀏覽器不支援時的模擬
       setTimeout(() => { fallbackVoice(); stopVoiceUI(); }, 2000);
     }
   }
-
   function stopVoiceUI() {
-    document.getElementById('recording-indicator').style.display = 'none';
-    document.getElementById('btn-mic').style.background = '#06C755';
+    const r = currentRoom();
+    document.getElementById(r.indicatorId).style.display = 'none';
+    document.getElementById(r.micId).style.background = '#06C755';
   }
-
   function fallbackVoice() {
     const replies = ["阿公有吃飽了！", "好，我等一下就回去", "讚讚讚👍"];
-    appendMessage(replies[Math.floor(Math.random() * replies.length)], 'sent');
+    appendMessage(replies[Math.floor(Math.random() * replies.length)], 'sent', nowTime(), currentRoom().messagesId);
   }
 
-  function appendMessage(text, type) {
-    const chat = document.getElementById('chat-messages');
-    const div = document.createElement('div');
-    div.className = `msg-bubble msg-${type}`;
-    div.innerText = text;
-    chat.appendChild(div);
-    chat.scrollTop = chat.scrollHeight;
-  }
-
-  /* 來電模擬 (AudioContext 產生鈴聲) */
+  /* ============ LINE 通話模擬 ============ */
   let audioCtx, ringInterval;
+  let callState = { isVideo: false, isSwipe: false, mode: 'incoming' };
 
   function primeAudio() {
     // 一定要在使用者的點擊事件中「同步」建立/喚醒 AudioContext，
-    // 手機瀏覽器才不會因自動播放限制而讓 3 秒後的鈴聲播不出來。
+    // 手機瀏覽器才不會因自動播放限制而讓延遲播放的鈴聲播不出來。
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
   }
 
   function playRingtone() {
     primeAudio();
-    const beep = () => {
-      const oscillator = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
-      oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(650, audioCtx.currentTime); // 類似電話鈴聲頻率
-      gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
-      oscillator.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-      oscillator.start();
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-      oscillator.stop(audioCtx.currentTime + 0.4);
+    // 用三顆明亮的琴音做成上揚音階，模擬 LINE 來電那種活潑的鈴聲質感
+    const notes = [880.00, 1108.73, 1318.51]; // A5, C#6, E6
+    const playNote = (freq, when, dur) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, when);
+      gain.gain.setValueAtTime(0.0001, when);
+      gain.gain.exponentialRampToValueAtTime(0.35, when + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(when); osc.stop(when + dur + 0.02);
     };
-    beep();
-    ringInterval = setInterval(beep, 1500);
+    const ringOnce = () => {
+      const t = audioCtx.currentTime;
+      notes.forEach((f, i) => playNote(f, t + i * 0.12, 0.35));
+      playNote(notes[0], t + 0.55, 0.35);
+    };
+    ringOnce();
+    ringInterval = setInterval(ringOnce, 1800);
   }
-
   function stopRingtone() {
     if (ringInterval) clearInterval(ringInterval);
   }
 
+  function setupCallUI(isVideo, isSwipe, mode) {
+    callState = { isVideo, isSwipe, mode };
+    document.getElementById('call-avatar').hidden = isVideo;
+    document.getElementById('call-video-preview').hidden = !isVideo;
+    document.getElementById('call-actions-tap').hidden = true;
+    document.getElementById('call-actions-swipe').hidden = true;
+    document.getElementById('call-actions-single').hidden = true;
+
+    if (mode === 'incoming') {
+      if (isSwipe) {
+        document.getElementById('call-actions-swipe').hidden = false;
+        const h = document.getElementById('swipe-handle');
+        h.style.transition = 'none';
+        h.style.transform = 'translateX(0)';
+      } else {
+        document.getElementById('call-actions-tap').hidden = false;
+      }
+      document.querySelector('.call-status').innerText = isVideo ? 'LINE 視訊通話來電...' : 'LINE 語音通話來電...';
+      document.querySelector('.call-status').style.color = '#ccc';
+    } else {
+      document.getElementById('call-actions-single').hidden = false;
+      document.getElementById('single-call-label').innerText = '取消';
+      document.querySelector('.call-status').innerText = isVideo ? 'LINE 視訊通話 撥號中...' : 'LINE 語音通話 撥號中...';
+      document.querySelector('.call-status').style.color = '#ccc';
+    }
+  }
+
   function triggerIncomingCall() {
-    primeAudio(); // 在點擊當下先解鎖音訊，避免手機瀏覽器擋掉延遲播放的鈴聲
+    primeAudio(); // 點擊當下先解鎖音訊，避免手機瀏覽器擋掉延遲播放的鈴聲
     showToast('3秒後將模擬來電...');
     setTimeout(() => {
+      const isVideo = Math.random() < 0.5;
+      const isSwipe = Math.random() < 0.5;
+      setupCallUI(isVideo, isSwipe, 'incoming');
       document.getElementById('line-call').classList.add('active');
       playRingtone();
       vibrate([500, 300, 500, 300, 500]);
     }, 3000);
   }
 
+  function toggleCallMenu() {
+    const m = document.getElementById('call-menu');
+    m.hidden = !m.hidden;
+  }
+
+  function startOutgoingCall(type) {
+    document.getElementById('call-menu').hidden = true;
+    const isVideo = type === 'video';
+    setupCallUI(isVideo, false, 'outgoing');
+    document.getElementById('line-call').classList.add('active');
+    setTimeout(() => {
+      if (!document.getElementById('line-call').classList.contains('active')) return; // 使用者已取消
+      answerCall(true); // 模擬對方接起電話
+    }, 2000);
+  }
+
   function answerCall(isAccept) {
     stopRingtone();
     vibrate(30);
     if (isAccept) {
-      document.getElementById('answer-wrap').style.display = 'none';
-      document.querySelector('.call-status').innerText = '通話中 00:01';
+      document.getElementById('call-actions-tap').hidden = true;
+      document.getElementById('call-actions-swipe').hidden = true;
+      document.getElementById('call-actions-single').hidden = false;
+      document.getElementById('single-call-label').innerText = '掛斷通話';
+      document.querySelector('.call-status').innerText = (callState.isVideo ? '視訊通話中 ' : '通話中 ') + '00:01';
       document.querySelector('.call-status').style.color = '#34c759';
-      document.querySelector('#decline-wrap .call-label').innerText = '掛斷通話';
-      // 3秒後自動掛斷
       setTimeout(() => { resetCallScreen(); }, 3000);
     } else {
       resetCallScreen();
     }
   }
-
   function resetCallScreen() {
     document.getElementById('line-call').classList.remove('active');
-    document.getElementById('answer-wrap').style.display = 'flex';
+    document.getElementById('call-actions-tap').hidden = true;
+    document.getElementById('call-actions-swipe').hidden = true;
+    document.getElementById('call-actions-single').hidden = true;
     document.querySelector('.call-status').innerText = 'LINE 語音通話來電...';
     document.querySelector('.call-status').style.color = '#ccc';
-    document.querySelector('#decline-wrap .call-label').innerText = '拒絕';
     stopRingtone();
+  }
+
+  /* 滑動接聽的拖曳邏輯 */
+  function initSwipeHandle() {
+    const handle = document.getElementById('swipe-handle');
+    const track = document.getElementById('swipe-track');
+    let dragging = false, startX = 0, currentX = 0, maxX = 0;
+    handle.addEventListener('pointerdown', (e) => {
+      dragging = true;
+      startX = e.clientX;
+      maxX = track.clientWidth - handle.clientWidth - 8;
+      handle.style.transition = 'none';
+      handle.setPointerCapture(e.pointerId);
+    });
+    handle.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      currentX = Math.min(Math.max(0, e.clientX - startX), maxX);
+      handle.style.transform = `translateX(${currentX}px)`;
+    });
+    const release = () => {
+      if (!dragging) return;
+      dragging = false;
+      handle.style.transition = 'transform 0.2s';
+      if (currentX > maxX * 0.8) {
+        handle.style.transform = `translateX(${maxX}px)`;
+        setTimeout(() => answerCall(true), 150);
+      } else {
+        handle.style.transform = 'translateX(0)';
+      }
+      currentX = 0;
+    };
+    handle.addEventListener('pointerup', release);
+    handle.addEventListener('pointercancel', release);
+  }
+  initSwipeHandle();
+
+  /* ============ 反應力訓練遊戲 ============ */
+  function openGame(id) {
+    document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if (id === 'game-color') startColorGame();
+    if (id === 'game-light') startLightGame();
+    if (id === 'game-scam') startScamGame();
+  }
+  function exitGame(id) {
+    if (id === 'game-light') { lightState.active = false; clearTimeout(lightState.timer); }
+    if (id === 'game-scam') { clearTimeout(scamState.timer); }
+    openApp('reaction-app');
+  }
+
+  /* 遊戲一：顏色反應 */
+  const colorPalette = [
+    { n: '紅色', c: '#ff3b30' }, { n: '橘色', c: '#ff9500' }, { n: '黃色', c: '#ffcc00' },
+    { n: '綠色', c: '#34c759' }, { n: '藍色', c: '#007aff' }, { n: '紫色', c: '#af52de' }
+  ];
+  let colorState = { round: 0, correct: 0, target: null };
+  function startColorGame() {
+    colorState = { round: 0, correct: 0, target: null };
+    document.getElementById('color-correct').innerText = 0;
+    nextColorRound();
+  }
+  function nextColorRound() {
+    if (colorState.round >= 10) { endColorGame(); return; }
+    colorState.round++;
+    document.getElementById('color-round').innerText = colorState.round;
+    const shuffled = [...colorPalette].sort(() => Math.random() - 0.5);
+    colorState.target = shuffled[0];
+    const choices = shuffled.slice(0, 4).sort(() => Math.random() - 0.5);
+    document.getElementById('color-swatch').style.background = colorState.target.c;
+    const box = document.getElementById('color-choices');
+    box.innerHTML = '';
+    choices.forEach(ch => {
+      const btn = document.createElement('button');
+      btn.className = 'color-choice-btn';
+      btn.style.background = ch.c;
+      btn.innerText = ch.n;
+      btn.onclick = () => handleColorChoice(ch);
+      box.appendChild(btn);
+    });
+  }
+  function handleColorChoice(choice) {
+    if (choice.c === colorState.target.c) {
+      colorState.correct++; vibrate(20); showToast('✅ 答對了！');
+    } else {
+      vibrate([40, 60, 40]); showToast('❌ 顏色不一樣喔');
+    }
+    document.getElementById('color-correct').innerText = colorState.correct;
+    nextColorRound();
+  }
+  function endColorGame() {
+    document.getElementById('color-swatch').style.background = '#ddd';
+    document.getElementById('color-choices').innerHTML =
+      `<div style="grid-column:1/-1;text-align:center;font-size:20px;font-weight:bold;color:#333;padding:20px 0;">完成！10題答對 ${colorState.correct} 題 🎉</div>
+       <button class="btn-unit" style="grid-column:1/-1;" onclick="startColorGame()">再玩一次</button>`;
+  }
+
+  /* 遊戲二：紅綠燈反應 (Go/No-Go) */
+  let lightState = { round: 0, correct: 0, timer: null, waitingTap: false, isGo: false, startTime: 0, active: false };
+  function startLightGame() {
+    lightState = { round: 0, correct: 0, timer: null, waitingTap: false, isGo: false, startTime: 0, active: true };
+    document.getElementById('light-round').innerText = 0;
+    document.getElementById('light-correct').innerText = 0;
+    document.getElementById('light-result').innerText = '';
+    const circle = document.getElementById('light-circle');
+    circle.className = 'light-circle'; circle.innerText = '請稍候...';
+    nextLightRound();
+  }
+  function nextLightRound() {
+    if (!lightState.active) return;
+    if (lightState.round >= 10) { endLightGame(); return; }
+    const circle = document.getElementById('light-circle');
+    circle.className = 'light-circle'; circle.innerText = '準備...';
+    lightState.waitingTap = false;
+    const delay = 800 + Math.random() * 1500;
+    lightState.timer = setTimeout(() => {
+      if (!lightState.active) return;
+      lightState.round++;
+      document.getElementById('light-round').innerText = lightState.round;
+      lightState.isGo = Math.random() < 0.6;
+      circle.className = 'light-circle ' + (lightState.isGo ? 'go' : 'stop');
+      circle.innerText = lightState.isGo ? '按！' : '不要按';
+      lightState.waitingTap = true;
+      lightState.startTime = performance.now();
+      lightState.timer = setTimeout(() => {
+        if (lightState.waitingTap) {
+          lightState.waitingTap = false;
+          if (!lightState.isGo) {
+            lightState.correct++;
+            document.getElementById('light-correct').innerText = lightState.correct;
+          }
+          nextLightRound();
+        }
+      }, 1000);
+    }, delay);
+  }
+  function handleLightTap() {
+    if (!lightState.active || !lightState.waitingTap) return;
+    lightState.waitingTap = false;
+    clearTimeout(lightState.timer);
+    if (lightState.isGo) {
+      lightState.correct++;
+      vibrate(20);
+      showToast('✅ 反應時間 ' + Math.round(performance.now() - lightState.startTime) + ' 毫秒');
+    } else {
+      vibrate([40, 60, 40]);
+      showToast('❌ 紅燈不能按喔！');
+    }
+    document.getElementById('light-correct').innerText = lightState.correct;
+    nextLightRound();
+  }
+  function endLightGame() {
+    lightState.active = false;
+    document.getElementById('light-circle').className = 'light-circle';
+    document.getElementById('light-circle').innerText = '結束';
+    document.getElementById('light-result').innerText = `完成！10次中答對 ${lightState.correct} 次 🎉（可按上方返回鍵再玩一次）`;
+  }
+
+  /* 遊戲三：詐騙關鍵字反應 */
+  const scamMessages = [
+    { text: '【客服中心】您的帳戶異常，請點擊連結解除分期付款設定', scam: true },
+    { text: '阿公，我是你孫子，手機摔壞換新號碼，先加我LINE好嗎', scam: true },
+    { text: '恭喜您抽中最新款手機，請提供身分證字號與銀行帳號領獎', scam: true },
+    { text: '媽，我今晚加班會晚點回家吃飯', scam: false },
+    { text: '警政署來電：你的帳戶涉及洗錢，需匯款至安全帳戶查驗', scam: true },
+    { text: '明天記得回診拿血壓藥喔', scam: false },
+    { text: '這是里長辦公室重陽節敬老活動的通知', scam: false },
+    { text: '投資老師：跟著我操作保證獲利，先加入LINE群組', scam: true },
+    { text: '孫子：阿公母親節快樂，禮拜天回去吃飯', scam: false },
+    { text: '法院來電：你的包裹涉及違禁品，請按9轉接處理', scam: true }
+  ];
+  let scamState = { round: 0, correct: 0, list: [], timer: null, answered: false };
+  function startScamGame() {
+    scamState.round = 0; scamState.correct = 0; scamState.answered = false;
+    scamState.list = [...scamMessages].sort(() => Math.random() - 0.5);
+    document.getElementById('scam-correct').innerText = 0;
+    nextScamRound();
+  }
+  function nextScamRound() {
+    if (scamState.round >= scamState.list.length) { endScamGame(); return; }
+    scamState.answered = false;
+    document.getElementById('scam-round').innerText = scamState.round + 1;
+    document.getElementById('scam-message-box').innerText = scamState.list[scamState.round].text;
+    const fill = document.getElementById('scam-timer-fill');
+    fill.style.transition = 'none'; fill.style.width = '100%';
+    requestAnimationFrame(() => { fill.style.transition = 'width 5s linear'; fill.style.width = '0%'; });
+    clearTimeout(scamState.timer);
+    scamState.timer = setTimeout(() => {
+      if (!scamState.answered) { showToast('⌛ 時間到，先跳過'); advanceScam(); }
+    }, 5000);
+  }
+  function handleScamChoice(userThinksScam) {
+    if (scamState.answered) return;
+    scamState.answered = true;
+    clearTimeout(scamState.timer);
+    const item = scamState.list[scamState.round];
+    if (userThinksScam === item.scam) {
+      scamState.correct++; vibrate(20); showToast('✅ 判斷正確！');
+    } else {
+      vibrate([40, 60, 40]);
+      showToast(item.scam ? '❌ 這其實是詐騙訊息，要小心！' : '❌ 這其實是正常訊息喔');
+    }
+    document.getElementById('scam-correct').innerText = scamState.correct;
+    setTimeout(advanceScam, 900);
+  }
+  function advanceScam() { scamState.round++; nextScamRound(); }
+  function endScamGame() {
+    document.getElementById('scam-message-box').innerText = `完成！10題答對 ${scamState.correct} 題 🎉`;
+    document.getElementById('scam-timer-fill').style.width = '0%';
   }
 </script>
 </body>
