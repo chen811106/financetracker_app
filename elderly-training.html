@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>長青腦力與3C訓練</title>
+
+<!-- 讓長輩可以「加入主畫面」，開啟後沒有瀏覽器網址列，體驗更接近原生 App -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="長青3C訓練">
+<meta name="theme-color" content="#222222">
+<meta name="format-detection" content="telephone=no">
+
+<style>
+  /* 基礎設定與手機外框模擬 */
+  html, body {
+    margin: 0; height: 100%;
+    font-family: '-apple-system', 'BlinkMacSystemFont', 'Microsoft JhengHei', sans-serif;
+    background: #222;
+    overflow: hidden; /* 避免整頁被拖出橡皮筋彈跳效果 */
+    overscroll-behavior: none;
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; /* 停用長按彈出選單，避免長輩誤觸 */
+    -webkit-tap-highlight-color: transparent; /* 移除點擊時的灰色閃爍 */
+  }
+  body { display: flex; justify-content: center; align-items: center; }
+  * { touch-action: manipulation; } /* 移除300ms點擊延遲與雙指縮放 */
+
+  #app-frame {
+    width: 100%; max-width: 414px;
+    height: 100vh; height: 100dvh; /* dvh 修正手機網址列造成的高度跳動 */
+    max-height: 896px;
+    background: #f2f2f7; position: relative; overflow: hidden;
+  }
+  @media (min-width: 415px) { #app-frame { height: 90vh; height: 90dvh; border-radius: 40px; border: 12px solid #444; box-shadow: 0 10px 30px rgba(0,0,0,0.5); } }
+
+  /* 共用介面 */
+  .screen { width: 100%; height: 100%; position: absolute; top: 0; left: 0; background: #f2f2f7; display: flex; flex-direction: column; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
+  .screen.active { opacity: 1; pointer-events: auto; }
+  .header { height: 60px; padding-top: env(safe-area-inset-top); height: calc(60px + env(safe-area-inset-top)); background: #fff; display: flex; align-items: center; padding-left: 15px; padding-right: 15px; font-size: 20px; font-weight: bold; box-sizing: border-box; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 2; }
+  .back-btn { margin-right: 15px; cursor: pointer; font-size: 24px; padding: 5px 10px 5px 0; color: #007aff; }
+  .content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 15px; box-sizing: border-box; position: relative; }
+
+  /* 首頁 (桌面) */
+  #home-screen { background: #e0e5ec; background-image: linear-gradient(180deg, #d3cce3 0%, #e9e4f0 100%); }
+  .home-header { padding: calc(60px + env(safe-area-inset-top)) 20px 20px; font-size: 32px; font-weight: bold; color: #333; text-shadow: 1px 1px 2px rgba(255,255,255,0.5); }
+  .app-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px 15px; padding: 20px; }
+  .app-icon-wrapper { display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; }
+  .app-icon { width: 75px; height: 75px; border-radius: 20px; display: flex; justify-content: center; align-items: center; font-size: 40px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); transition: transform 0.1s; }
+  .app-icon:active { transform: scale(0.9); }
+  .app-icon.stock { background: linear-gradient(135deg, #ff3b30, #ff9500); color: white; }
+  .app-icon.line { background: linear-gradient(135deg, #06C755, #009900); color: white; }
+  .app-icon.fraud { background: linear-gradient(135deg, #5856d6, #3b3998); color: white; }
+  .app-label { font-size: 15px; color: #333; font-weight: bold; }
+
+  /* 台股訓練 App */
+  #stock-app .header { background: #111; color: #fff; }
+  .stock-score-board { display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; margin-bottom: 15px; background: #fff; padding: 15px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+  .stock-card { background: white; border-radius: 16px; padding: 25px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); text-align: center; }
+  .stock-name { font-size: 36px; font-weight: bold; color: #111; margin-bottom: 5px; }
+  .stock-code { font-size: 20px; color: #666; margin-bottom: 20px; }
+  .event-box { background: #f8f9fa; border-left: 5px solid #007aff; padding: 15px; border-radius: 8px; margin-bottom: 25px; }
+  .stock-event { font-size: 22px; color: #111; font-weight: bold; line-height: 1.4; }
+  .stock-actions { display: flex; gap: 15px; justify-content: center; }
+  .btn-stock { flex: 1; padding: 18px 0; font-size: 22px; font-weight: bold; border: none; border-radius: 12px; cursor: pointer; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.08s; }
+  .btn-stock:active { transform: scale(0.96); }
+  /* 台股紅漲綠跌 */
+  .btn-buy { background: #ff3b30; }
+  .btn-sell { background: #34c759; }
+
+  .unit-selector { display: none; flex-direction: column; gap: 15px; margin-top: 25px; animation: slideDown 0.3s ease-out; }
+  @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+  .unit-title { font-size: 20px; font-weight: bold; color: #333; }
+  .unit-btns { display: flex; gap: 10px; }
+  .btn-unit { flex: 1; padding: 15px; font-size: 20px; border-radius: 10px; border: 2px solid #ddd; background: #fff; cursor: pointer; font-weight: bold; color: #333; transition: all 0.2s; }
+  .btn-unit:active { transform: scale(0.96); }
+  .btn-unit.target { border-color: #007aff; color: #007aff; background: #e6f2ff; }
+
+  /* LINE 模擬器 */
+  #line-app .header { background: #06C755; color: white; border-bottom: none; }
+  .banner-btn { background: #ffe8b5; color: #b77900; text-align: center; padding: 12px; font-weight: bold; font-size: 16px; margin-bottom: 10px; border-radius: 10px; cursor: pointer; }
+  .banner-btn:active { transform: scale(0.98); }
+  .chat-list { display: flex; flex-direction: column; background: #fff; border-radius: 12px; overflow: hidden; }
+  .chat-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f0f0f0; cursor: pointer; }
+  .chat-item:active { background: #f9f9f9; }
+  .avatar { width: 55px; height: 55px; border-radius: 50%; background: #e1e1e1; margin-right: 15px; display: flex; justify-content: center; align-items: center; font-size: 28px; flex-shrink: 0; }
+  .chat-info { flex: 1; min-width: 0; }
+  .chat-name { font-size: 18px; font-weight: bold; color: #111; margin-bottom: 6px; }
+  .chat-preview { font-size: 15px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* LINE 聊天室 */
+  #line-chat { background: #749cbd; z-index: 10; }
+  #line-chat .header { background: #272727; color: white; opacity: 0.95; }
+  .chat-messages { flex: 1; padding: 15px; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 15px; }
+  .msg-bubble { max-width: 75%; padding: 10px 15px; border-radius: 18px; font-size: 18px; line-height: 1.4; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.1); word-break: break-word; }
+  .msg-received { background: white; color: #111; align-self: flex-start; border-top-left-radius: 4px; }
+  .msg-sent { background: #85e249; color: #111; align-self: flex-end; border-top-right-radius: 4px; }
+
+  /* 輸入區 */
+  .chat-input-area { background: #f4f4f4; padding: 12px 15px; display: flex; align-items: center; gap: 12px; border-top: 1px solid #ccc; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  .chat-input { flex: 1; border: none; border-radius: 20px; padding: 12px 15px; font-size: 18px; outline: none; background: #fff; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); }
+  .btn-mic { width: 44px; height: 44px; border-radius: 50%; background: #06C755; border: none; font-size: 22px; display: flex; justify-content: center; align-items: center; cursor: pointer; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: transform 0.1s; flex-shrink: 0; }
+  .btn-mic:active { transform: scale(0.9); }
+  .recording-indicator { display: none; color: #ff3b30; font-weight: bold; font-size: 16px; margin-left: 10px; animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* LINE 來電畫面 */
+  #line-call { background: #222; color: white; z-index: 20; align-items: center; padding-top: calc(15vh + env(safe-area-inset-top)); }
+  .call-avatar { width: 140px; height: 140px; border-radius: 50%; background: #e1e1e1; display: flex; justify-content: center; align-items: center; font-size: 70px; margin-bottom: 25px; }
+  .call-name { font-size: 32px; font-weight: bold; margin-bottom: 12px; }
+  .call-status { font-size: 20px; color: #ccc; margin-bottom: 15vh; }
+  .call-actions { display: flex; gap: 70px; width: 100%; justify-content: center; padding-bottom: env(safe-area-inset-bottom); }
+  .call-action-wrap { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+  .btn-call { width: 85px; height: 85px; border-radius: 50%; border: none; display: flex; justify-content: center; align-items: center; font-size: 40px; color: white; cursor: pointer; }
+  .btn-call:active { transform: scale(0.92); }
+  .btn-decline { background: #ff3b30; }
+  .btn-answer { background: #34c759; animation: pulse 1.5s infinite; }
+  .call-label { font-size: 18px; color: white; font-weight: bold; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.7); } 70% { box-shadow: 0 0 0 25px rgba(52, 199, 89, 0); } 100% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0); } }
+
+  /* 提示彈窗 */
+  #toast { position: absolute; top: calc(40px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: white; padding: 15px 25px; border-radius: 30px; font-size: 18px; display: none; z-index: 100; text-align: center; white-space: nowrap; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+</style>
+</head>
+<body>
+
+<div id="app-frame">
+  <!-- 提示彈窗 -->
+  <div id="toast">提示訊息</div>
+
+  <!-- 首頁 -->
+  <div id="home-screen" class="screen active">
+    <div class="home-header">我的手機</div>
+    <div class="app-grid">
+      <div class="app-icon-wrapper" onclick="openApp('stock-app')">
+        <div class="app-icon stock">📈</div>
+        <div class="app-label">台股訓練</div>
+      </div>
+      <div class="app-icon-wrapper" onclick="openApp('line-app')">
+        <div class="app-icon line">💬</div>
+        <div class="app-label">LINE模擬</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 台股訓練 App -->
+  <div id="stock-app" class="screen">
+    <div class="header">
+      <div class="back-btn" onclick="openApp('home-screen')">◀</div>
+      <div>台股反應訓練</div>
+    </div>
+    <div class="content">
+      <div class="stock-score-board">
+        <span>回合：<span id="stock-round">1</span>/10</span>
+        <span>資金：$<span id="stock-score">100,000</span></span>
+      </div>
+
+      <div class="stock-card">
+        <div class="stock-name" id="stock-name">台積電</div>
+        <div class="stock-code" id="stock-code">2330</div>
+
+        <div class="event-box">
+          <div class="stock-event" id="stock-event">載入中...</div>
+        </div>
+
+        <div id="action-area">
+          <div style="font-size: 18px; color: #666; margin-bottom: 15px; font-weight:bold;">阿公，遇到這件事該買還是賣？</div>
+          <div class="stock-actions">
+            <button class="btn-stock btn-buy" onclick="handleStockDecision('buy')">現股買進</button>
+            <button class="btn-stock btn-sell" onclick="handleStockDecision('sell')">融券賣出</button>
+          </div>
+        </div>
+
+        <!-- 選擇股數/張數區域 -->
+        <div id="unit-area" class="unit-selector">
+          <div class="unit-title" id="unit-prompt">你要下單多少？</div>
+          <div class="unit-btns">
+            <button class="btn-unit" onclick="handleUnitDecision('1張')">1 張<br><span style="font-size:14px; color:#666;">(1000股)</span></button>
+            <button class="btn-unit" onclick="handleUnitDecision('100股')">100 股<br><span style="font-size:14px; color:#666;">(零股)</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LINE 模擬器 - 聊天列表 -->
+  <div id="line-app" class="screen">
+    <div class="header">
+      <div class="back-btn" onclick="openApp('home-screen')" style="color:white;">◀</div>
+      <div>聊天</div>
+    </div>
+    <div class="content" style="background: #f0f0f0; padding: 0;">
+      <div style="padding: 15px;">
+        <div class="banner-btn" onclick="triggerIncomingCall()">📞 點此模擬：孫子打電話來</div>
+      </div>
+      <div class="chat-list">
+        <div class="chat-item" onclick="openLineChat()">
+          <div class="avatar">👦</div>
+          <div class="chat-info">
+            <div class="chat-name">乖孫 凱凱</div>
+            <div class="chat-preview">阿公，你吃飽了嗎？</div>
+          </div>
+        </div>
+        <div class="chat-item">
+          <div class="avatar">👨‍👩‍👧‍👦</div>
+          <div class="chat-info">
+            <div class="chat-name">快樂一家人</div>
+            <div class="chat-preview">[圖片] 早安！祝大家平安喜樂。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LINE 模擬器 - 聊天室 -->
+  <div id="line-chat" class="screen">
+    <div class="header">
+      <div class="back-btn" onclick="closeLineChat()" style="color:white;">◀</div>
+      <div style="flex:1;">乖孫 凱凱</div>
+      <div style="font-size:24px;">📞</div>
+    </div>
+    <div class="chat-messages" id="chat-messages">
+      <div class="msg-bubble msg-received">阿公，你吃飽了嗎？</div>
+    </div>
+    <div class="chat-input-area">
+      <input type="text" class="chat-input" placeholder="Aa" readonly onclick="showToast('請練習按右邊的麥克風用語音輸入')">
+      <span class="recording-indicator" id="recording-indicator">聆聽中...</span>
+      <button class="btn-mic" id="btn-mic" onclick="handleVoiceInput()">🎤</button>
+    </div>
+  </div>
+
+  <!-- LINE 模擬器 - 來電畫面 -->
+  <div id="line-call" class="screen">
+    <div class="call-avatar">👦</div>
+    <div class="call-name">乖孫 凱凱</div>
+    <div class="call-status">LINE 語音通話來電...</div>
+    <div class="call-actions">
+      <div class="call-action-wrap" id="decline-wrap">
+        <button class="btn-call btn-decline" onclick="answerCall(false)">✕</button>
+        <span class="call-label">拒絕</span>
+      </div>
+      <div class="call-action-wrap" id="answer-wrap">
+        <button class="btn-call btn-answer" onclick="answerCall(true)">📞</button>
+        <span class="call-label">接聽</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  /* 共用邏輯 */
+  function vibrate(pattern) {
+    if (navigator.vibrate) { try { navigator.vibrate(pattern); } catch (e) {} }
+  }
+
+  function openApp(id) {
+    document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if (id === 'stock-app') startStockGame();
+  }
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.innerText = msg;
+    toast.style.display = 'block';
+    setTimeout(() => { toast.style.display = 'none'; }, 2500);
+  }
+
+  /* 台股訓練邏輯 */
+  const companies = [
+    { name: '台積電', code: '2330' }, { name: '鴻海', code: '2317' },
+    { name: '聯發科', code: '2454' }, { name: '長榮', code: '2603' },
+    { name: '富邦金', code: '2881' }
+  ];
+  const events = [
+    { text: '美國聯準會宣布大幅降息，熱錢湧入！', trend: 'buy' },
+    { text: '中東爆發嚴重衝突，引發恐慌性賣壓！', trend: 'sell' },
+    { text: '公司高層涉嫌作假帳，遭檢調無預警搜索！', trend: 'sell' },
+    { text: '法說會公布獲利創下歷史新高！', trend: 'buy' },
+    { text: '順利接獲蘋果下一代新機獨家大單！', trend: 'buy' },
+    { text: '競爭對手大幅降價搶市，毛利率恐衰退。', trend: 'sell' }
+  ];
+
+  let currentStock = {};
+  let currentEvent = {};
+  let score = 100000;
+  let round = 1;
+
+  function startStockGame() {
+    score = 100000; round = 1;
+    updateStockUI();
+    nextStockQuestion();
+  }
+
+  function updateStockUI() {
+    document.getElementById('stock-score').innerText = score.toLocaleString();
+    document.getElementById('stock-round').innerText = round;
+  }
+
+  function nextStockQuestion() {
+    document.getElementById('action-area').style.display = 'block';
+    document.getElementById('unit-area').style.display = 'none';
+    currentStock = companies[Math.floor(Math.random() * companies.length)];
+    currentEvent = events[Math.floor(Math.random() * events.length)];
+    document.getElementById('stock-name').innerText = currentStock.name;
+    document.getElementById('stock-code').innerText = currentStock.code;
+    document.getElementById('stock-event').innerText = currentEvent.text;
+  }
+
+  function handleStockDecision(decision) {
+    if (decision === currentEvent.trend) {
+      vibrate(30);
+      showToast('✅ 判斷正確！這是順勢操作。');
+      score += 5000;
+      document.getElementById('action-area').style.display = 'none';
+      document.getElementById('unit-area').style.display = 'flex';
+      // 隨機要求買張或股
+      const targetUnit = Math.random() > 0.5 ? '1張' : '100股';
+      document.getElementById('unit-prompt').innerText = `請點擊下單：【${targetUnit}】`;
+      document.getElementById('unit-area').setAttribute('data-target', targetUnit);
+    } else {
+      vibrate([40, 60, 40]);
+      showToast('❌ 危險！新聞是反向的，小心套牢！');
+      score -= 3000;
+    }
+    updateStockUI();
+  }
+
+  function handleUnitDecision(unit) {
+    const target = document.getElementById('unit-area').getAttribute('data-target');
+    if (unit === target) {
+      vibrate(30);
+      showToast('✅ 下單單位正確！交易成功。');
+      setTimeout(() => {
+        round++;
+        if (round > 10) { showToast('訓練結束！阿公好棒！'); startStockGame(); }
+        else { updateStockUI(); nextStockQuestion(); }
+      }, 1500);
+    } else {
+      vibrate([40, 60, 40]);
+      showToast(`❌ 按錯了！你要買的是 ${target}，不是 ${unit}！`);
+    }
+  }
+
+  /* LINE 模擬邏輯 */
+  function openLineChat() {
+    document.getElementById('line-app').classList.remove('active');
+    document.getElementById('line-chat').classList.add('active');
+  }
+  function closeLineChat() {
+    document.getElementById('line-chat').classList.remove('active');
+    document.getElementById('line-app').classList.add('active');
+  }
+
+  /* 語音輸入模擬 */
+  let SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition;
+  if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.lang = 'zh-TW';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onresult = function (event) {
+      const text = event.results[0][0].transcript;
+      appendMessage(text, 'sent');
+      stopVoiceUI();
+    };
+    recognition.onerror = function () {
+      showToast('沒聽清楚，我幫你傳預設訊息');
+      fallbackVoice();
+      stopVoiceUI();
+    };
+    recognition.onend = function () { stopVoiceUI(); };
+  }
+
+  function handleVoiceInput() {
+    const indicator = document.getElementById('recording-indicator');
+    const micBtn = document.getElementById('btn-mic');
+    indicator.style.display = 'inline';
+    micBtn.style.background = '#ff3b30'; // 變紅色表示錄音中
+    vibrate(20);
+
+    if (recognition) {
+      try { recognition.start(); }
+      catch (e) { fallbackVoice(); stopVoiceUI(); }
+    } else {
+      // 瀏覽器不支援時的模擬
+      setTimeout(() => { fallbackVoice(); stopVoiceUI(); }, 2000);
+    }
+  }
+
+  function stopVoiceUI() {
+    document.getElementById('recording-indicator').style.display = 'none';
+    document.getElementById('btn-mic').style.background = '#06C755';
+  }
+
+  function fallbackVoice() {
+    const replies = ["阿公有吃飽了！", "好，我等一下就回去", "讚讚讚👍"];
+    appendMessage(replies[Math.floor(Math.random() * replies.length)], 'sent');
+  }
+
+  function appendMessage(text, type) {
+    const chat = document.getElementById('chat-messages');
+    const div = document.createElement('div');
+    div.className = `msg-bubble msg-${type}`;
+    div.innerText = text;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  /* 來電模擬 (AudioContext 產生鈴聲) */
+  let audioCtx, ringInterval;
+
+  function primeAudio() {
+    // 一定要在使用者的點擊事件中「同步」建立/喚醒 AudioContext，
+    // 手機瀏覽器才不會因自動播放限制而讓 3 秒後的鈴聲播不出來。
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  }
+
+  function playRingtone() {
+    primeAudio();
+    const beep = () => {
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(650, audioCtx.currentTime); // 類似電話鈴聲頻率
+      gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      oscillator.start();
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+      oscillator.stop(audioCtx.currentTime + 0.4);
+    };
+    beep();
+    ringInterval = setInterval(beep, 1500);
+  }
+
+  function stopRingtone() {
+    if (ringInterval) clearInterval(ringInterval);
+  }
+
+  function triggerIncomingCall() {
+    primeAudio(); // 在點擊當下先解鎖音訊，避免手機瀏覽器擋掉延遲播放的鈴聲
+    showToast('3秒後將模擬來電...');
+    setTimeout(() => {
+      document.getElementById('line-call').classList.add('active');
+      playRingtone();
+      vibrate([500, 300, 500, 300, 500]);
+    }, 3000);
+  }
+
+  function answerCall(isAccept) {
+    stopRingtone();
+    vibrate(30);
+    if (isAccept) {
+      document.getElementById('answer-wrap').style.display = 'none';
+      document.querySelector('.call-status').innerText = '通話中 00:01';
+      document.querySelector('.call-status').style.color = '#34c759';
+      document.querySelector('#decline-wrap .call-label').innerText = '掛斷通話';
+      // 3秒後自動掛斷
+      setTimeout(() => { resetCallScreen(); }, 3000);
+    } else {
+      resetCallScreen();
+    }
+  }
+
+  function resetCallScreen() {
+    document.getElementById('line-call').classList.remove('active');
+    document.getElementById('answer-wrap').style.display = 'flex';
+    document.querySelector('.call-status').innerText = 'LINE 語音通話來電...';
+    document.querySelector('.call-status').style.color = '#ccc';
+    document.querySelector('#decline-wrap .call-label').innerText = '拒絕';
+    stopRingtone();
+  }
+</script>
+</body>
+</html>
