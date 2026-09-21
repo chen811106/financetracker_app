@@ -276,6 +276,18 @@
     INCOME_CATEGORIES.concat(s.customIncomeCategories).forEach(c => {
       if (!Array.isArray(s.incomeCategoryKeywords[c.key])) s.incomeCategoryKeywords[c.key] = [];
     });
+
+    // 每月定期定額（股票代號/名稱、每月預設金額、扣款帳戶），跟週期性
+    // 繳費是分開的清單——定期定額的重點是「每次實際扣款金額可能跟預設
+    // 的有零頭差異」，所以確認繳款時金額一定要讓使用者自己填，不像
+    // 一般固定繳費可以整個自動幫你記。
+    if (!Array.isArray(s.dca)) s.dca = [];
+    s.dca.forEach(d => {
+      if (typeof d.resetDay !== "number") d.resetDay = 5;
+      if (typeof d.done !== "boolean") d.done = false;
+      if (!d.lastResetMonth) d.lastResetMonth = mKey;
+      if (d.lastTxId === undefined) d.lastTxId = null;
+    });
   }
 
   function persistLocal(s) {
@@ -420,6 +432,26 @@
     if (changed) persistLocal(state);
   }
   maybeResetRecurring();
+
+  /* ---------------- 每筆定期定額各自的每月自動重置 ----------------
+     只重置「已確認」狀態，不會自動幫忙記帳——實際扣款金額每次可能有
+     零頭差異，一定要等使用者自己看到扣款後填實際金額才記一筆，這點
+     跟固定繳費的「自動扣款」不一樣。 */
+  function maybeResetDca() {
+    const now = new Date();
+    const mKey = currentMonthKey(now);
+    let changed = false;
+    state.dca.forEach(d => {
+      if (d.lastResetMonth !== mKey && now.getDate() >= d.resetDay) {
+        d.done = false;
+        d.lastTxId = null;
+        d.lastResetMonth = mKey;
+        changed = true;
+      }
+    });
+    if (changed) persistLocal(state);
+  }
+  maybeResetDca();
 
   /* ---------------- 信用卡結帳日：把「已刷卡未出帳」併入「本期應繳」 ----------------
      每張卡結帳日一到，就把這段期間累積的 unbilled（已刷卡未出帳）併進
@@ -619,8 +651,16 @@
       if (rec) { rec.done = false; rec.lastTxId = null; }
       renderRecurring();
     }
+    // 定期定額同理：從最近紀錄直接刪掉那筆自動記的交易，也要把定期
+    // 定額項目的「已確認」狀態解除，不然會變成錢已經還回來、清單上
+    // 卻還顯示「已確認」的不一致狀態。
+    if (tx.dcaId) {
+      const d = state.dca.find(x => x.id === tx.dcaId);
+      if (d) { d.done = false; d.lastTxId = null; }
+      renderDca();
+    }
     state.transactions.splice(idx, 1);
-    renderHome(); renderChart(); renderAccounts(); renderCards();
+    renderHome(); renderChart(); renderAccounts(); renderCards(); renderWaterLevel();
     saveState(state);
   }
 
@@ -896,7 +936,7 @@
         if (!acc) return;
         confirmDelete(`帳戶「${escapeHtml(acc.name)}」（餘額 ${money(acc.balance)}）刪除後無法復原，過去用這個帳戶記的紀錄不會被刪除，但會顯示為未知帳戶。`, () => {
           state.accounts = state.accounts.filter(a => a.id !== id);
-          renderAccounts(); renderHome();
+          renderAccounts(); renderHome(); renderWaterLevel();
           saveState(state);
         });
       });
@@ -1147,7 +1187,13 @@
                 r.done = false;
               }
             });
-            renderHome(); renderChart(); renderAccounts(); renderCards(); renderRecurring();
+            state.dca.forEach(d => {
+              if (d.lastTxId && !state.transactions.some(t => t.id === d.lastTxId)) {
+                d.lastTxId = null;
+                d.done = false;
+              }
+            });
+            renderHome(); renderChart(); renderAccounts(); renderCards(); renderRecurring(); renderDca(); renderWaterLevel();
             saveState(state);
           }
         );
@@ -1409,7 +1455,7 @@
             r.lastTxId = null;
           }
           r.done = false;
-          renderRecurring(); renderHome(); renderChart(); renderAccounts(); renderCards();
+          renderRecurring(); renderHome(); renderChart(); renderAccounts(); renderCards(); renderWaterLevel();
           saveState(state);
         } else {
           openRecurringPayModal(r);
@@ -1423,7 +1469,7 @@
         if (!r) return;
         confirmDelete(`固定繳費項目「${escapeHtml(r.name)}」（${money(r.amount)}）刪除後無法復原。`, () => {
           state.recurring = state.recurring.filter(x => x.id !== id);
-          renderRecurring();
+          renderRecurring(); renderWaterLevel();
           saveState(state);
         });
       });
@@ -1483,7 +1529,7 @@
       r.lastTxId = tx.id;
 
       closeModal();
-      renderRecurring(); renderHome(); renderChart(); renderAccounts(); renderCards();
+      renderRecurring(); renderHome(); renderChart(); renderAccounts(); renderCards(); renderWaterLevel();
       saveState(state);
     });
   }
@@ -1574,12 +1620,244 @@
         });
       }
       closeModal();
-      renderRecurring();
+      renderRecurring(); renderWaterLevel();
       saveState(state);
     });
   }
 
   document.getElementById("addRecurringBtn").addEventListener("click", () => openRecurringModal(null));
+
+  /* ================= 每月定期定額 =================
+     跟週期性繳費清單分開的獨立清單，專門給「投資型」的每月扣款用
+     （例如券商定期定額買 0052）。跟固定繳費最大的不同：這裡永遠要
+     使用者自己確認實際扣款金額，不會整個自動幫你記——因為定期定額
+     的成交金額常常會因為零股/單位淨值而跟預設金額有零頭差異，用
+     預設金額直接記帳反而容易記錯。 */
+  function renderDca() {
+    const list = document.getElementById("dcaList");
+    const empty = document.getElementById("dcaEmpty");
+    empty.style.display = state.dca.length ? "none" : "block";
+
+    list.innerHTML = state.dca.map(d => `
+      <li class="recurring-item">
+        <button class="checkbox ${d.done ? "checked" : ""}" data-toggle-dca="${d.id}" aria-label="標記已確認">${d.done ? "✓" : ""}</button>
+        <div class="recurring-main">
+          <div class="recurring-name ${d.done ? "done" : ""}">${escapeHtml(d.name)}</div>
+          <div class="recurring-sub">每月約 ${d.resetDay} 號扣款・從「${escapeHtml(paymentLabel(d.paymentId))}」扣</div>
+        </div>
+        <div class="recurring-amount ${d.done ? "done" : ""}">${money(d.amount)}</div>
+        <div class="recurring-actions">
+          <button class="item-edit" data-edit-dca="${d.id}" aria-label="編輯">✎</button>
+          <button class="item-delete" data-del-dca="${d.id}" aria-label="刪除">✕</button>
+        </div>
+      </li>`).join("");
+
+    list.querySelectorAll("[data-toggle-dca]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const d = state.dca.find(x => x.id === btn.getAttribute("data-toggle-dca"));
+        if (!d) return;
+        if (d.done) {
+          // 取消確認：把剛剛那筆自動記的交易一併刪掉、付款帳戶餘額還原，
+          // 避免「取消了、錢卻還是扣著」的不一致狀態。
+          if (d.lastTxId) {
+            const idx = state.transactions.findIndex(t => t.id === d.lastTxId);
+            if (idx !== -1) {
+              const tx = state.transactions[idx];
+              applyPaymentDelta(tx.paymentId, tx.amount, -1);
+              state.transactions.splice(idx, 1);
+            }
+            d.lastTxId = null;
+          }
+          d.done = false;
+          renderDca(); renderHome(); renderChart(); renderAccounts(); renderCards(); renderWaterLevel();
+          saveState(state);
+        } else {
+          openDcaPayModal(d);
+        }
+      });
+    });
+    list.querySelectorAll("[data-del-dca]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-del-dca");
+        const d = state.dca.find(x => x.id === id);
+        if (!d) return;
+        confirmDelete(`定期定額項目「${escapeHtml(d.name)}」刪除後無法復原（不會動到已經記錄的歷史交易）。`, () => {
+          state.dca = state.dca.filter(x => x.id !== id);
+          renderDca(); renderWaterLevel();
+          saveState(state);
+        });
+      });
+    });
+    list.querySelectorAll("[data-edit-dca]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const d = state.dca.find(x => x.id === btn.getAttribute("data-edit-dca"));
+        if (d) openDcaModal(d);
+      });
+    });
+  }
+
+  // 確認實際扣款：預設帶入設定好的金額，但一定要讓使用者自己改成
+  // 實際扣了多少（常常會有零頭差異），確認後記一筆支出，分類固定是
+  // 「投資」，項目名稱自動加上月份，例如「9月0052定期定額」。
+  function openDcaPayModal(d) {
+    const accountOptions = state.accounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join("");
+
+    modalBody.innerHTML = `
+      <h3>${escapeHtml(d.name)} 實際扣款</h3>
+      <p class="hint-text" style="margin:0 0 8px;">預設金額 ${money(d.amount)}，實際扣款常會有零頭差異，請填實際扣了多少。</p>
+      <label class="field-label">實際扣款金額</label>
+      <input id="dcaPayAmount" class="text-input" type="number" min="0" value="${d.amount}">
+      <label class="field-label">用哪個帳戶扣的</label>
+      <select id="dcaPayMethod" class="text-input">${accountOptions}</select>
+      <p class="hint-text" id="dcaPayHint"></p>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="dcaPayCancelBtn">取消</button>
+        <button class="btn-save" id="dcaPaySaveBtn">確認</button>
+      </div>`;
+    modalOverlay.classList.add("open");
+    modalBody.querySelector("#dcaPayMethod").value = d.paymentId;
+
+    modalBody.querySelector("#dcaPayCancelBtn").addEventListener("click", closeModal);
+    modalBody.querySelector("#dcaPaySaveBtn").addEventListener("click", () => {
+      const amount = parseFloat(modalBody.querySelector("#dcaPayAmount").value);
+      const paymentId = modalBody.querySelector("#dcaPayMethod").value;
+      const hint = modalBody.querySelector("#dcaPayHint");
+      if (!amount || amount <= 0) { hint.textContent = "請輸入有效金額"; return; }
+
+      const now = new Date();
+      const tx = {
+        id: uid(),
+        type: "expense",
+        date: now.toISOString().slice(0, 10),
+        item: `${now.getMonth() + 1}月${d.name}定期定額`,
+        amount,
+        category: "投資",
+        paymentId,
+        dcaId: d.id
+      };
+      state.transactions.unshift(tx);
+      applyPaymentDelta(paymentId, amount, +1);
+
+      d.done = true;
+      d.lastTxId = tx.id;
+
+      closeModal();
+      renderDca(); renderHome(); renderChart(); renderAccounts(); renderCards(); renderWaterLevel();
+      saveState(state);
+    });
+  }
+
+  function openDcaModal(existing) {
+    if (!state.accounts.length) {
+      modalBody.innerHTML = `
+        <h3>新增定期定額</h3>
+        <p class="confirm-message">要先有銀行帳戶才能設定定期定額，先去「帳戶」分頁新增一個帳戶吧。</p>
+        <div class="modal-actions">
+          <button class="btn-save" id="dcaNoAccountOkBtn" style="flex:1;">好</button>
+        </div>`;
+      modalOverlay.classList.add("open");
+      modalBody.querySelector("#dcaNoAccountOkBtn").addEventListener("click", closeModal);
+      return;
+    }
+
+    const accountOptions = state.accounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join("");
+
+    modalBody.innerHTML = `
+      <h3>${existing ? "編輯定期定額" : "新增定期定額"}</h3>
+      <label class="field-label">股票代號／名稱</label>
+      <input id="dcaName" class="text-input" placeholder="例如：0052" value="${existing ? escapeAttr(existing.name) : ""}">
+      <div class="row">
+        <div class="field">
+          <label class="field-label">每月定期定額金額</label>
+          <input id="dcaAmount" class="text-input" type="number" min="0" placeholder="0" value="${existing ? existing.amount : ""}">
+        </div>
+        <div class="field">
+          <label class="field-label">每月約幾號扣款</label>
+          <input id="dcaResetDay" class="text-input" type="number" min="1" max="28" placeholder="5" value="${existing ? existing.resetDay : ""}">
+        </div>
+      </div>
+      <label class="field-label">用哪個帳戶扣款</label>
+      <select id="dcaAccount" class="text-input">${accountOptions}</select>
+      <p class="hint-text" id="dcaHint"></p>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="dcaCancelBtn">取消</button>
+        <button class="btn-save" id="dcaSaveBtn">儲存</button>
+      </div>`;
+    modalOverlay.classList.add("open");
+
+    if (existing) modalBody.querySelector("#dcaAccount").value = existing.paymentId;
+
+    modalBody.querySelector("#dcaCancelBtn").addEventListener("click", closeModal);
+    modalBody.querySelector("#dcaSaveBtn").addEventListener("click", () => {
+      const name = modalBody.querySelector("#dcaName").value.trim();
+      const amount = parseFloat(modalBody.querySelector("#dcaAmount").value);
+      const resetDay = Math.min(28, Math.max(1, parseInt(modalBody.querySelector("#dcaResetDay").value) || 5));
+      const paymentId = modalBody.querySelector("#dcaAccount").value;
+      const hint = modalBody.querySelector("#dcaHint");
+      if (!name) { hint.textContent = "請輸入股票代號／名稱"; return; }
+      if (!amount || amount <= 0) { hint.textContent = "請輸入有效金額"; return; }
+
+      if (existing) {
+        existing.name = name;
+        existing.amount = amount;
+        existing.resetDay = resetDay;
+        existing.paymentId = paymentId;
+      } else {
+        state.dca.push({
+          id: uid(),
+          name, amount, paymentId, resetDay,
+          done: false,
+          lastResetMonth: currentMonthKey(),
+          lastTxId: null
+        });
+      }
+      closeModal();
+      renderDca(); renderWaterLevel();
+      saveState(state);
+    });
+  }
+
+  document.getElementById("addDcaBtn").addEventListener("click", () => openDcaModal(null));
+
+  /* ================= 本月帳戶水位提醒 =================
+     這個月會自動扣款的固定繳費、加上定期定額的預設金額，依帳戶加總，
+     提醒使用者這個月每個帳戶至少要留多少錢，扣款才不會失敗。只看
+     「自動扣款」的固定繳費——手動勾選的項目是使用者自己主動去繳，
+     繳款當下自然會注意夠不夠錢，不需要提前提醒。 */
+  function computeAccountWaterLevels() {
+    const totals = {};
+    state.recurring.forEach(r => {
+      if (r.autoDeduct && r.autoPaymentId) {
+        totals[r.autoPaymentId] = (totals[r.autoPaymentId] || 0) + r.amount;
+      }
+    });
+    state.dca.forEach(d => {
+      if (d.paymentId) {
+        totals[d.paymentId] = (totals[d.paymentId] || 0) + d.amount;
+      }
+    });
+    return totals;
+  }
+
+  function renderWaterLevel() {
+    const list = document.getElementById("waterLevelList");
+    const empty = document.getElementById("waterLevelEmpty");
+    if (!list || !empty) return;
+    const totals = computeAccountWaterLevels();
+    const rows = state.accounts
+      .map(a => ({ account: a, total: totals[a.id] || 0 }))
+      .filter(r => r.total > 0);
+    empty.style.display = rows.length ? "none" : "block";
+    list.innerHTML = rows.map(r => `
+      <li class="list-item">
+        <span class="item-dot" style="background:var(--c-fun)"></span>
+        <div class="item-main">
+          <div class="item-title">${escapeHtml(r.account.name)}</div>
+          <div class="item-sub">這個月自動扣款＋定期定額合計</div>
+        </div>
+        <div class="item-amount">至少 ${money(r.total)}</div>
+      </li>`).join("");
+  }
 
   /* ================= 通用 Modal =================
      儲存動作統一放在「關閉 Modal 之後」才執行，確保發布出去的
@@ -1956,6 +2234,8 @@
         <ul>
           <li>新增固定要繳的項目，設定每月幾號重置為未繳納</li>
           <li>可以選「手動勾選」（自己按已繳、選付款方式）或「自動扣款」（先設定好扣款方式跟要扣到哪個月，時間一到系統自動記一筆，不用自己按）</li>
+          <li>「本月帳戶水位提醒」會自動加總這個月每個帳戶會被自動扣款/定期定額扣走多少錢，提醒你那個帳戶至少要留多少</li>
+          <li>「每月定期定額」是另外一份清單，專門給投資用：設定股票代號、預設金額、扣款帳戶，扣款後按一下、自己填實際扣了多少（常會有零頭差異），會自動記一筆分類為「投資」的支出</li>
         </ul>
 
         <h4>⚙ 管理分類</h4>
@@ -2013,6 +2293,8 @@
   renderAccounts();
   renderCards();
   renderRecurring();
+  renderDca();
+  renderWaterLevel();
   embedStateInDom(state);
 
   initCloud();

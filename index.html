@@ -187,6 +187,15 @@
     <section id="tab-checklist" class="tab-panel">
       <div class="card">
         <div class="section-head">
+          <h2>本月帳戶水位提醒</h2>
+        </div>
+        <p class="hint-text" style="margin-top:0;">依照這個月會自動扣款的固定繳費、加上定期定額的預設金額，抓出每個帳戶至少要留多少錢。</p>
+        <ul id="waterLevelList" class="plain-list"></ul>
+        <p class="empty-hint" id="waterLevelEmpty">目前沒有設定自動扣款或定期定額的項目</p>
+      </div>
+
+      <div class="card">
+        <div class="section-head">
           <h2>週期性繳費清單</h2>
           <button class="add-mini" id="addRecurringBtn">+ 新增項目</button>
         </div>
@@ -195,6 +204,18 @@
 
         <ul id="recurringList" class="plain-list"></ul>
         <p class="empty-hint" id="recurringEmpty">還沒有固定繳費項目</p>
+      </div>
+
+      <div class="card">
+        <div class="section-head">
+          <h2>每月定期定額</h2>
+          <button class="add-mini" id="addDcaBtn">+ 新增定期定額</button>
+        </div>
+
+        <p class="hint-text">實際扣款金額常會有零頭差異，扣款後按一下、自己填實際扣了多少，會自動記一筆分類為「投資」的支出。</p>
+
+        <ul id="dcaList" class="plain-list"></ul>
+        <p class="empty-hint" id="dcaEmpty">還沒有定期定額項目</p>
       </div>
     </section>
 
