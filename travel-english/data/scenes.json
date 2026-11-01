@@ -1,0 +1,17 @@
+{
+  "_說明": "場景清單。新增場景時：1) 在 data/ 放一個新的課程檔（格式照 ordering.json） 2) 在這裡加一筆，把 available 設成 true 3) 在 sw.js 的 APP_FILES 加上新檔名（才能離線使用）",
+  "scenes": [
+    {
+      "id": "ordering",
+      "title": "餐廳點餐",
+      "emoji": "🍔",
+      "desc": "點餐、問推薦、結帳",
+      "available": true,
+      "file": "data/ordering.json"
+    },
+    { "id": "airport",  "title": "機場",  "emoji": "✈️", "desc": "報到、安檢、出入境", "available": false },
+    { "id": "direction", "title": "問路", "emoji": "🗺️", "desc": "問方向、搭車",       "available": false },
+    { "id": "hotel",    "title": "飯店",  "emoji": "🏨", "desc": "入住、退房、要東西", "available": false },
+    { "id": "shopping", "title": "購物",  "emoji": "🛍️", "desc": "問價錢、試穿、付款", "available": false }
+  ]
+}

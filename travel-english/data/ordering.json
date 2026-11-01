@@ -1,0 +1,199 @@
+{
+  "id": "ordering",
+  "title": "餐廳點餐",
+  "roles": {
+    "staff": { "name": "店員", "emoji": "🧑‍🍳" },
+    "customer": { "name": "你（客人）", "emoji": "🙋" }
+  },
+
+  "dialogue": [
+    { "role": "staff",    "en": "Hi! Welcome. How many people?",          "zh": "你好！歡迎光臨。請問幾位？" },
+    { "role": "customer", "en": "Two, please.",                           "zh": "兩位，謝謝。" },
+    { "role": "staff",    "en": "This way, please. Here is the menu.",    "zh": "這邊請。這是菜單。" },
+    { "role": "customer", "en": "Thank you. What do you recommend?",      "zh": "謝謝。你推薦什麼？" },
+    { "role": "staff",    "en": "Our chicken burger is very popular.",    "zh": "我們的雞肉漢堡很受歡迎。" },
+    { "role": "customer", "en": "OK. I'd like a chicken burger, please.", "zh": "好。我想要一個雞肉漢堡，謝謝。" },
+    { "role": "staff",    "en": "Anything to drink?",                     "zh": "要喝點什麼嗎？" },
+    { "role": "customer", "en": "Can I have an orange juice?",            "zh": "我可以要一杯柳橙汁嗎？" },
+    { "role": "staff",    "en": "Sure. Anything else?",                   "zh": "好的。還需要別的嗎？" },
+    { "role": "customer", "en": "No, that's all. Thank you.",             "zh": "不用，這樣就好。謝謝。" }
+  ],
+
+  "patterns": [
+    {
+      "id": "can-i-have",
+      "template": "Can I have {}?",
+      "zh": "我可以要{}嗎？",
+      "tip": "最好用的點餐句！想要什麼就放進空格。",
+      "options": [
+        { "en": "a burger",     "zh": "一個漢堡" },
+        { "en": "some water",   "zh": "一些水" },
+        { "en": "the menu",     "zh": "菜單" },
+        { "en": "a coke",       "zh": "一杯可樂" },
+        { "en": "a fork",       "zh": "一支叉子" }
+      ]
+    },
+    {
+      "id": "id-like",
+      "template": "I'd like {}, please.",
+      "zh": "我想要{}，謝謝。",
+      "tip": "I'd 就是 I would，聽起來很有禮貌。",
+      "options": [
+        { "en": "fried rice",   "zh": "炒飯" },
+        { "en": "a salad",      "zh": "一份沙拉" },
+        { "en": "a coffee",     "zh": "一杯咖啡" },
+        { "en": "ice cream",    "zh": "冰淇淋" }
+      ]
+    },
+    {
+      "id": "recommend",
+      "template": "What do you recommend {}?",
+      "zh": "{}你推薦什麼？",
+      "tip": "不知道點什麼時，直接問店員最快！",
+      "options": [
+        { "en": "for lunch",    "zh": "午餐" },
+        { "en": "for dinner",   "zh": "晚餐" },
+        { "en": "for dessert",  "zh": "甜點" },
+        { "en": "for kids",     "zh": "小孩吃的" }
+      ]
+    },
+    {
+      "id": "please",
+      "template": "{}, please.",
+      "zh": "請給我{}。",
+      "tip": "最簡單的萬用句：東西 + please。吃完說 Check, please. 就是要結帳。",
+      "options": [
+        { "en": "Check",          "zh": "帳單（結帳）" },
+        { "en": "Water",          "zh": "水" },
+        { "en": "A table for two","zh": "兩人的位子" },
+        { "en": "A bag",          "zh": "一個袋子" },
+        { "en": "To go",          "zh": "外帶" }
+      ]
+    },
+    {
+      "id": "do-you-have",
+      "template": "Do you have {}?",
+      "zh": "你們有{}嗎？",
+      "tip": "想確認店裡有沒有某樣東西時用。",
+      "options": [
+        { "en": "a kids' menu",    "zh": "兒童菜單" },
+        { "en": "Wi-Fi",           "zh": "無線網路" },
+        { "en": "vegetarian food", "zh": "素食" },
+        { "en": "a high chair",    "zh": "兒童椅" }
+      ]
+    },
+    {
+      "id": "no-please",
+      "template": "No {}, please.",
+      "zh": "請不要加{}。",
+      "tip": "不吃某樣東西時，在點餐後加這一句。",
+      "options": [
+        { "en": "ice",      "zh": "冰塊" },
+        { "en": "onions",   "zh": "洋蔥" },
+        { "en": "sugar",    "zh": "糖" },
+        { "en": "cheese",   "zh": "起司" },
+        { "en": "peanuts",  "zh": "花生" }
+      ]
+    },
+    {
+      "id": "how-much",
+      "template": "How much is {}?",
+      "zh": "{}多少錢？",
+      "tip": "問價錢用 How much。",
+      "options": [
+        { "en": "this",          "zh": "這個" },
+        { "en": "the burger",    "zh": "這個漢堡" },
+        { "en": "the set meal",  "zh": "套餐" },
+        { "en": "a coffee",      "zh": "一杯咖啡" }
+      ]
+    },
+    {
+      "id": "where-is",
+      "template": "Where is {}?",
+      "zh": "{}在哪裡？",
+      "tip": "在餐廳裡找東西、找地方。",
+      "options": [
+        { "en": "the restroom",  "zh": "廁所" },
+        { "en": "the exit",      "zh": "出口" },
+        { "en": "the counter",   "zh": "櫃台" },
+        { "en": "the trash can", "zh": "垃圾桶" }
+      ]
+    }
+  ],
+
+  "questions": [
+    {
+      "en": "How many people?",
+      "choices": ["請問幾位？", "你要點什麼？", "你要內用嗎？"],
+      "answer": 0,
+      "replies": [
+        { "en": "Two, please.",  "zh": "兩位，謝謝。" },
+        { "en": "Just one.",     "zh": "只有一位。" },
+        { "en": "Four people.",  "zh": "四個人。" }
+      ]
+    },
+    {
+      "en": "Do you have a reservation?",
+      "choices": ["你要看菜單嗎？", "你有訂位嗎？", "你要付現金嗎？"],
+      "answer": 1,
+      "replies": [
+        { "en": "Yes, I do.",   "zh": "有，我有訂位。" },
+        { "en": "No, I don't.", "zh": "沒有。" }
+      ]
+    },
+    {
+      "en": "Are you ready to order?",
+      "choices": ["你吃飽了嗎？", "你要結帳了嗎？", "你準備好點餐了嗎？"],
+      "answer": 2,
+      "replies": [
+        { "en": "Yes. I'd like a burger, please.", "zh": "好了。我想要一個漢堡，謝謝。" },
+        { "en": "Not yet, please.",                "zh": "還沒，請等一下。" }
+      ]
+    },
+    {
+      "en": "What would you like to drink?",
+      "choices": ["你想喝什麼？", "你想吃什麼？", "你要冰的嗎？"],
+      "answer": 0,
+      "replies": [
+        { "en": "Water, please.",       "zh": "水，謝謝。" },
+        { "en": "Can I have a coke?",   "zh": "我可以要一杯可樂嗎？" }
+      ]
+    },
+    {
+      "en": "For here or to go?",
+      "choices": ["要大杯還是小杯？", "內用還是外帶？", "現金還是刷卡？"],
+      "answer": 1,
+      "replies": [
+        { "en": "For here, please.", "zh": "內用，謝謝。" },
+        { "en": "To go, please.",    "zh": "外帶，謝謝。" }
+      ]
+    },
+    {
+      "en": "Anything else?",
+      "choices": ["好吃嗎？", "你要坐哪裡？", "還需要別的嗎？"],
+      "answer": 2,
+      "replies": [
+        { "en": "No, that's all.",       "zh": "不用，這樣就好。" },
+        { "en": "Yes, a coffee, please.", "zh": "要，再一杯咖啡，謝謝。" }
+      ]
+    },
+    {
+      "en": "How is everything?",
+      "choices": ["餐點還可以嗎？", "一共多少錢？", "你從哪裡來？"],
+      "answer": 0,
+      "replies": [
+        { "en": "It's great, thank you!", "zh": "很好吃，謝謝！" },
+        { "en": "Very good.",             "zh": "非常好。" }
+      ]
+    },
+    {
+      "en": "Cash or card?",
+      "choices": ["要收據嗎？", "付現金還是刷卡？", "內用還是外帶？"],
+      "answer": 1,
+      "replies": [
+        { "en": "Card, please.", "zh": "刷卡，謝謝。" },
+        { "en": "Cash.",         "zh": "付現金。" }
+      ]
+    }
+  ]
+}
